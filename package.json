@@ -2,6 +2,9 @@
   "name": "@jerome1337/ccc",
   "version": "1.0.0",
   "description": "Reusable Claude Code rules, CLAUDE.md, and AGENTS.md",
+  "scripts": {
+    "release": "semantic-release -r git+https://github.com/jerome1337/ccc.git"
+  },
   "bin": {
     "ccc": "./bin/cli.js"
   },
@@ -26,7 +29,8 @@
   },
   "license": "MIT",
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "homepage": "https://github.com/jerome1337/ccc#readme",
   "bugs": {
@@ -36,6 +40,7 @@
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^12.0.6",
-    "@semantic-release/npm": "^13.1.4"
+    "@semantic-release/npm": "^13.1.0",
+    "semantic-release": "^25.0.3"
   }
 }
