@@ -1,6 +1,6 @@
-# claude-rules
+# ccc
 
-Reusable Claude Code rules, CLAUDE.md, and AGENTS.md for your projects.
+Reusable Claude Code Config, rules, skills, CLAUDE.md, and AGENTS.md for your projects.
 
 ## Contents
 
@@ -19,32 +19,23 @@ claude-rules/
 
 ## Usage
 
-### Option 1: Symlink into your project
-
 ```bash
-# From your project root
-ln -s /path/to/claude-rules/CLAUDE.md ./CLAUDE.md
-ln -s /path/to/claude-rules/AGENTS.md ./AGENTS.md
-ln -s /path/to/claude-rules/rules ./.claude/rules
+npx @jerome1337/ccc init
 ```
 
-### Option 2: Copy into your project
+This copies the following into your project:
+
+| Source | Destination |
+|---|---|
+| `CLAUDE.md` | `./CLAUDE.md` |
+| `AGENTS.md` | `./AGENTS.md` |
+| `RTK.md` | `./RTK.md` |
+| `rules/*.md` | `./.claude/rules/*.md` |
+
+Existing files are skipped by default. Use `--force` to overwrite:
 
 ```bash
-# From your project root
-cp /path/to/claude-rules/CLAUDE.md ./CLAUDE.md
-cp /path/to/claude-rules/AGENTS.md ./AGENTS.md
-mkdir -p .claude/rules
-cp /path/to/claude-rules/rules/*.md ./.claude/rules/
-```
-
-### Option 3: Git submodule
-
-```bash
-git submodule add https://github.com/<your-username>/claude-rules .claude-rules
-ln -s .claude-rules/CLAUDE.md ./CLAUDE.md
-ln -s .claude-rules/AGENTS.md ./AGENTS.md
-ln -s .claude-rules/rules ./.claude/rules
+npx @jerome1337/ccc init --force
 ```
 
 ## How It Works

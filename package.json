@@ -1,0 +1,35 @@
+{
+  "name": "@jerome1337/ccc",
+  "version": "1.0.0",
+  "description": "Reusable Claude Code rules, CLAUDE.md, and AGENTS.md",
+  "bin": {
+    "ccc": "./bin/cli.js"
+  },
+  "files": [
+    "bin/",
+    "rules/",
+    "CLAUDE.md",
+    "AGENTS.md",
+    "RTK.md"
+  ],
+  "keywords": [
+    "claude",
+    "claude-code",
+    "rules",
+    "ai",
+    "agents"
+  ],
+  "author": "Jérôme Pogeant <hello@jeromepogeant.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jerome1337/ccc"
+  },
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "homepage": "https://github.com/jerome1337/ccc#readme",
+  "bugs": {
+    "url": "https://github.com/jerome1337/ccc/issues"
+  }
+}
