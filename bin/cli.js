@@ -15,6 +15,9 @@ const FILES = [
 const RULES_DIR = 'rules'
 const RULES_DEST = path.join('.claude', 'rules')
 
+const SKILLS_DIR = 'skills'
+const SKILLS_DEST = path.join('.claude', 'skills')
+
 const args = process.argv.slice(2)
 const command = args.find((a) => !a.startsWith('-')) || 'init'
 const force = args.includes('--force') || args.includes('-f')
@@ -40,6 +43,26 @@ const copyFile = (srcPath, destPath) => {
   return 'copied'
 }
 
+const copyDirectory = (srcDir, destDir) => {
+  let copied = 0
+  let skipped = 0
+
+  const srcPath = path.join(PACKAGE_ROOT, srcDir)
+  if (fs.existsSync(srcPath)) {
+    const mdFiles = fs.readdirSync(srcPath).filter((f) => f.endsWith('.md'))
+    for (const file of mdFiles) {
+      const result = copyFile(
+        path.join(srcPath, file),
+        path.join(TARGET_DIR, destDir, file),
+      )
+      if (result === 'copied') copied++
+      else skipped++
+    }
+  }
+
+  return { copied, skipped }
+}
+
 const init = () => {
   console.log(`\n${bold('@jerome1337/ccc')} — Setting up Claude Code rules\n`)
 
@@ -55,18 +78,13 @@ const init = () => {
     else skipped++
   }
 
-  const rulesSrcDir = path.join(PACKAGE_ROOT, RULES_DIR)
-  if (fs.existsSync(rulesSrcDir)) {
-    const ruleFiles = fs.readdirSync(rulesSrcDir).filter((f) => f.endsWith('.md'))
-    for (const file of ruleFiles) {
-      const result = copyFile(
-        path.join(rulesSrcDir, file),
-        path.join(TARGET_DIR, RULES_DEST, file),
-      )
-      if (result === 'copied') copied++
-      else skipped++
-    }
-  }
+  const rulesResult = copyDirectory(RULES_DIR, RULES_DEST)
+  copied += rulesResult.copied
+  skipped += rulesResult.skipped
+
+  const skillsResult = copyDirectory(SKILLS_DIR, SKILLS_DEST)
+  copied += skillsResult.copied
+  skipped += skillsResult.skipped
 
   console.log(`\n  ${bold(`${copied} copied`)}${skipped > 0 ? `, ${skipped} skipped` : ''}\n`)
 
