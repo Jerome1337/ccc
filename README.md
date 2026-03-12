@@ -14,6 +14,8 @@ claude-rules/
 │   ├── code-style.md     # Naming, exports, Biome, comments, reusability
 │   ├── commands.md       # Dev commands (build, lint, db, turbo)
 │   └── patterns.md       # Frontend patterns, auth routes, AI integration
+├── skills/         # Claude Code skills (auto-loaded by .claude/skills/)
+│   └── pr-review.md      # PR review skill
 └── README.md
 ```
 
@@ -31,6 +33,7 @@ This copies the following into your project:
 | `AGENTS.md` | `./AGENTS.md` |
 | `RTK.md` | `./RTK.md` |
 | `rules/*.md` | `./.claude/rules/*.md` |
+| `skills/*.md` | `./.claude/skills/*.md` |
 
 Existing files are skipped by default. Use `--force` to overwrite:
 
@@ -43,6 +46,7 @@ npx @jerome1337/ccc init --force
 - **CLAUDE.md** — Loaded automatically by Claude Code at the project root. Contains security guidelines and references RTK.md.
 - **AGENTS.md** — Read by AI coding agents (Claude, Cursor, Copilot, etc.) for project conventions.
 - **rules/** — Files in `.claude/rules/` are automatically loaded by Claude Code based on their `alwaysApply` / `globs` frontmatter. All rules here use `alwaysApply: true`.
+- **skills/** — Files in `.claude/skills/` define custom slash commands for Claude Code. Invoke with `/skill-name` (e.g., `/pr-review`).
 
 ## Customization
 
