@@ -1,6 +1,6 @@
 {
   "name": "@jerome1337/ccc",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Reusable Claude Code rules, CLAUDE.md, and AGENTS.md",
   "scripts": {
     "release": "semantic-release -r git+https://github.com/jerome1337/ccc.git"
