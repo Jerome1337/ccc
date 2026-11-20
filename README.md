@@ -1,13 +1,14 @@
 # ccc
 
-Reusable Claude Code Config, rules, skills, CLAUDE.md, RTK.md and AGENTS.md for your projects.
+Reusable Claude Code Config, rules, skills, CLAUDE.md, RTK.md, CODING_STYLE.md and AGENTS.md for your projects.
 
 ## Contents
 
 ```
 claude-rules/
-├── CLAUDE.md       # Claude Code project instructions (security, RTK reference)
+├── CLAUDE.md       # Claude Code project instructions (security, RTK and coding style references)
 ├── RTK.md          # Rust Token Killer instructions (token-optimized CLI proxy)
+├── CODING_STYLE.md # Framework-agnostic coding style: naming, structure, size and complexity limits
 ├── AGENTS.md       # General AI agent instructions (conventions, structure, workflow)
 ├── rules/          # Claude Code rules (auto-loaded by .claude/rules/)
 │   ├── architecture.md   # Monorepo structure, stack, import conventions
@@ -32,6 +33,7 @@ This copies the following into your project:
 | `CLAUDE.md` | `./CLAUDE.md` |
 | `AGENTS.md` | `./AGENTS.md` |
 | `RTK.md` | `./RTK.md` |
+| `CODING_STYLE.md` | `./CODING_STYLE.md` |
 | `rules/*.md` | `./.claude/rules/*.md` |
 | `skills/*.md` | `./.claude/skills/*.md` |
 
@@ -43,14 +45,15 @@ npx @jerome1337/ccc init --force
 
 ## How It Works
 
-- **CLAUDE.md** — Loaded automatically by Claude Code at the project root. Contains security guidelines and references RTK.md.
+- **CLAUDE.md** — Loaded automatically by Claude Code at the project root. Contains security guidelines and imports RTK.md and CODING_STYLE.md.
+- **CODING_STYLE.md** — Personal coding style that works with any framework (React, Astro, Vue…): language, formatting, naming, functions, types, errors, comments, and size and complexity limits based on SonarQube's TypeScript rules. Framework-specific rules sit in their own sections at the end. It can also be used globally: copy it to `~/.claude/` and add `@CODING_STYLE.md` to `~/.claude/CLAUDE.md`.
 - **AGENTS.md** — Read by AI coding agents (Claude, Cursor, Copilot, etc.) for project conventions.
 - **rules/** — Files in `.claude/rules/` are automatically loaded by Claude Code based on their `alwaysApply` / `globs` frontmatter. All rules here use `alwaysApply: true`.
 - **skills/** — Files in `.claude/skills/` define custom slash commands for Claude Code. Invoke with `/skill-name` (e.g., `/pr-review`).
 
 ## Customization
 
-These rules are tailored for a Next.js 16 + Turborepo + Bun + Drizzle + Biome + shadcn/ui stack. To adapt for a different project:
+`CODING_STYLE.md` doesn't depend on the stack and needs no changes. The files in `rules/` are tailored for a Next.js 16 + Turborepo + Bun + Drizzle + Biome + shadcn/ui stack. To adapt them for a different project:
 
 1. Update `rules/architecture.md` with your project structure
 2. Update `rules/commands.md` with your dev commands
