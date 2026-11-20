@@ -15,7 +15,8 @@
     "rules/",
     "CLAUDE.md",
     "AGENTS.md",
-    "RTK.md"
+    "RTK.md",
+    "CODING_STYLE.md"
   ],
   "keywords": [
     "claude",

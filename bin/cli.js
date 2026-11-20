@@ -10,6 +10,7 @@ const FILES = [
   { src: 'CLAUDE.md', dest: 'CLAUDE.md' },
   { src: 'AGENTS.md', dest: 'AGENTS.md' },
   { src: 'RTK.md', dest: 'RTK.md' },
+  { src: 'CODING_STYLE.md', dest: 'CODING_STYLE.md' },
 ];
 
 const RULES_DIR = 'rules';

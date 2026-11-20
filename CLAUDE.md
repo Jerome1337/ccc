@@ -3,6 +3,7 @@
 This file provides guidance to Claude Code (claude/code) when working with code in this repository.
 
 @RTK.md
+@CODING_STYLE.md
 
 ## Security Guidelines
 
