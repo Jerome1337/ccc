@@ -74,7 +74,7 @@ The default `ccc.yml` installs `heroui-react` and `elevenlabs` as MCP servers, a
 
 A server whose `env` variables are missing is skipped, so `elevenlabs` is only added when `ELEVENLABS_API_KEY` is set. Export it from your shell profile or secret manager rather than typing it on the command line, so it stays out of your shell history. Like any `claude mcp add -e`, the value is then stored in `~/.claude.json`. `elevenlabs` also needs `uv`.
 
-`stripe` asks you to log in the first time you use it in Claude Code (`/mcp`).
+Then, in Claude Code, run `/mcp` to log in to the servers that need it (like the one in the `stripe` plugin) and `/plugin` to set the options a plugin asks for (like `ponytail`). ccc reminds you at the end of the install.
 
 ## How It Works
 
