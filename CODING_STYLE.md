@@ -63,7 +63,8 @@ Apply these limits to code you write or change. Don't refactor untouched code ju
 - No TODO/FIXME, no JSDoc paragraphs, no `@param` blocks.
 
 ### Dependencies & UI
-- Write small utilities and hooks yourself before adding a dependency. Icons come from Lucide, using the package for the project's framework (`lucide-react` in React).
+- Write small utilities and hooks yourself before adding a dependency.
+- Icons: one icon set per project. If the project already uses one (check `package.json` and existing imports), keep it, for example Heroicons with `@heroicons/react`. Otherwise use Lucide (`lucide-react` in React). Always take the set's package for the project's framework, and never add a second set.
 - Style with Tailwind. Use plain HTML elements with classes; reach for a component library only when the project already does.
 - Animations: CSS `@keyframes` in the Tailwind theme; no motion library.
 - Compose classes with the project's helper (`cn()`) or the framework's built-in (`class:list` in Astro) if there is one, otherwise template literals. Never mix two approaches in one file.
