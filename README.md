@@ -51,6 +51,17 @@ npx @jerome1337/ccc@latest update
 
 Add `--global` to `init` or `update` to use `~/.claude/` instead of the current project. `AGENTS.md` is not copied there, and rules and skills go to `~/.claude/rules/` and `~/.claude/skills/`.
 
+`--global` also installs these MCP servers and plugins for your user with the `claude` CLI. The ones already installed are left as they are:
+
+| Type | Name |
+|---|---|
+| MCP server | `context7`, `stripe`, `heroui-react`, `elevenlabs` |
+| Plugin | `code-simplifier`, `frontend-design`, `brag`, `claude-seo`, `ponytail` |
+
+`elevenlabs` needs `uv` and is only added when `ELEVENLABS_API_KEY` is set in your environment. Export it from your shell profile or secret manager rather than typing it on the command line, so it stays out of your shell history.
+
+`stripe` asks you to log in the first time you use it in Claude Code (`/mcp`).
+
 ## How It Works
 
 - **CLAUDE.md** — Loaded automatically by Claude Code at the project root. Contains security guidelines and imports RTK.md and CODING_STYLE.md.

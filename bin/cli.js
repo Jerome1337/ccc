@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -22,6 +23,24 @@ const RULES_DEST = path.join(CLAUDE_DIR, 'rules');
 
 const SKILLS_DIR = 'skills';
 const SKILLS_DEST = path.join(CLAUDE_DIR, 'skills');
+
+const MCP_ADD = ['mcp', 'add', '-s', 'user'];
+
+const CLAUDE_COMMANDS = [
+  [...MCP_ADD, '--transport', 'http', 'context7', 'https://mcp.context7.com/mcp'],
+  [...MCP_ADD, '--transport', 'http', 'stripe', 'https://mcp.stripe.com'],
+  [...MCP_ADD, 'heroui-react', '--', 'npx', '-y', '@heroui/react-mcp@latest'],
+  ['plugin', 'marketplace', 'add', 'anthropics/claude-plugins-official'],
+  ['plugin', 'marketplace', 'add', 'latent-spaces/brag'],
+  ['plugin', 'marketplace', 'add', 'AgriciDaniel/claude-seo'],
+  ['plugin', 'marketplace', 'add', 'https://github.com/DietrichGebert/ponytail.git'],
+  ['plugin', 'install', 'code-simplifier@claude-plugins-official'],
+  ['plugin', 'install', 'frontend-design@claude-plugins-official'],
+  ['plugin', 'install', 'brag@brag'],
+  // no marketplace suffix: it was renamed upstream, so it differs between machines
+  ['plugin', 'install', 'claude-seo'],
+  ['plugin', 'install', 'ponytail@ponytail'],
+];
 
 const args = process.argv.slice(2);
 const command = args.find((a) => !a.startsWith('-')) || 'init';
@@ -108,6 +127,29 @@ const copyDirectory = async (srcDir, destDir) => {
   return { copied, skipped };
 };
 
+const installClaudeExtensions = () => {
+  console.log(`${bold('MCP servers and plugins')}\n`);
+
+  // the key comes from the environment so the public package never contains it
+  const apiKey = process.env.ELEVENLABS_API_KEY;
+  const elevenLabs = [...MCP_ADD, 'elevenlabs', '-e', `ELEVENLABS_API_KEY=${apiKey}`, '--', 'uvx', 'elevenlabs-mcp'];
+  const commands = apiKey ? [...CLAUDE_COMMANDS, elevenLabs] : CLAUDE_COMMANDS;
+  if (!apiKey) {
+    console.log(`  ${yellow('skip')}  elevenlabs ${dim('(set ELEVENLABS_API_KEY and run again)')}`);
+  }
+
+  for (const claudeArgs of commands) {
+    const result = spawnSync('claude', claudeArgs, { stdio: 'inherit' });
+    if (result.error) {
+      console.log(`  ${yellow('skip')}  ${dim('claude not found, install Claude Code first')}\n`);
+
+      return;
+    }
+  }
+
+  console.log();
+};
+
 const init = async () => {
   console.log(`\n${bold('@jerome1337/ccc')} — Setting up Claude Code rules\n`);
 
@@ -136,6 +178,10 @@ const init = async () => {
   if (copied > 0) {
     console.log(`${dim('  Edit the files to match your project, then commit them.')}\n`);
   }
+
+  if (isGlobal) {
+    installClaudeExtensions();
+  }
 };
 
 if (command === 'init' || command === 'update') {
@@ -145,5 +191,5 @@ if (command === 'init' || command === 'update') {
   console.log(`  ${bold('init')}      Copy Claude Code rules into the current project`);
   console.log(`  ${bold('update')}    Add new files and ask before overwriting changed ones`);
   console.log(`  ${bold('--force')}   Overwrite existing files`);
-  console.log(`  ${bold('--global')}  Use ~/.claude instead of the current project\n`);
+  console.log(`  ${bold('--global')}  Use ~/.claude and install MCP servers and plugins\n`);
 }
