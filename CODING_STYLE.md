@@ -77,6 +77,10 @@ Apply these limits to code you write or change. Don't refactor untouched code ju
 - Put static content in typed data modules, not inline in components.
 - No barrel `index.ts` files.
 
+### Reuse
+- Before writing new code, search the codebase for a component, hook, helper, type or constant that already does the job. Search by what it does and its synonyms, not only by the name you would give it. Reuse or extend it instead of rewriting it from scratch.
+- Make reusable code easy to find with a search: one concern per file, the file named after what it exports, in the folder for its kind (`components/`, `hooks/`, `helpers/`…), with a name made of the words someone would search for (`helpers/formatPrice.ts` exporting `formatPrice`, not `utils.ts` exporting `fmt`).
+
 ### Security
 - Never read, open, `cat`, `echo`, `grep`, `source` or print a `.env` or `.env.*` file (`.env.local`, `.env.production`…), with any tool. Only `.env.example` may be read. Reference environment variables by name, never by value.
 
