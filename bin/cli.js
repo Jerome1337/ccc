@@ -178,7 +178,9 @@ const installClaudeExtensions = () => {
     }
   }
 
-  console.log();
+  if (commands.length > 0) {
+    console.log(`\n  ${dim('In Claude Code, log in to MCP servers with /mcp and set up plugins with /plugin.')}\n`);
+  }
 };
 
 const init = async () => {
