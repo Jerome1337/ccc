@@ -6,17 +6,22 @@ const os = require('node:os');
 const path = require('node:path');
 const readline = require('node:readline/promises');
 
+const YAML = require('yaml');
+
 const isGlobal = process.argv.includes('--global') || process.argv.includes('-g');
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const TARGET_DIR = isGlobal ? path.join(os.homedir(), '.claude') : process.cwd();
 const CLAUDE_DIR = isGlobal ? '' : '.claude';
 
+const CONFIG_FILE = 'ccc.yml';
+
 const FILES = [
   { src: 'CLAUDE.md', dest: 'CLAUDE.md' },
-  { src: 'AGENTS.md', dest: 'AGENTS.md' },
+  { src: 'AGENTS.md', dest: 'AGENTS.md', scope: 'project' },
   { src: 'RTK.md', dest: 'RTK.md' },
   { src: 'CODING_STYLE.md', dest: 'CODING_STYLE.md' },
-].filter((file) => !(isGlobal && file.src === 'AGENTS.md'));
+  { src: CONFIG_FILE, dest: CONFIG_FILE, scope: 'global' },
+].filter((file) => file.scope !== (isGlobal ? 'project' : 'global'));
 
 const RULES_DIR = 'rules';
 const RULES_DEST = path.join(CLAUDE_DIR, 'rules');
@@ -25,22 +30,6 @@ const SKILLS_DIR = 'skills';
 const SKILLS_DEST = path.join(CLAUDE_DIR, 'skills');
 
 const MCP_ADD = ['mcp', 'add', '-s', 'user'];
-
-const CLAUDE_COMMANDS = [
-  [...MCP_ADD, '--transport', 'http', 'context7', 'https://mcp.context7.com/mcp'],
-  [...MCP_ADD, '--transport', 'http', 'stripe', 'https://mcp.stripe.com'],
-  [...MCP_ADD, 'heroui-react', '--', 'npx', '-y', '@heroui/react-mcp@latest'],
-  ['plugin', 'marketplace', 'add', 'anthropics/claude-plugins-official'],
-  ['plugin', 'marketplace', 'add', 'latent-spaces/brag'],
-  ['plugin', 'marketplace', 'add', 'AgriciDaniel/claude-seo'],
-  ['plugin', 'marketplace', 'add', 'https://github.com/DietrichGebert/ponytail.git'],
-  ['plugin', 'install', 'code-simplifier@claude-plugins-official'],
-  ['plugin', 'install', 'frontend-design@claude-plugins-official'],
-  ['plugin', 'install', 'brag@brag'],
-  // no marketplace suffix: it was renamed upstream, so it differs between machines
-  ['plugin', 'install', 'claude-seo'],
-  ['plugin', 'install', 'ponytail@ponytail'],
-];
 
 const args = process.argv.slice(2);
 const command = args.find((a) => !a.startsWith('-')) || 'init';
@@ -127,16 +116,58 @@ const copyDirectory = async (srcDir, destDir) => {
   return { copied, skipped };
 };
 
-const installClaudeExtensions = () => {
-  console.log(`${bold('MCP servers and plugins')}\n`);
+const isText = (value) => typeof value === 'string' && value.trim() !== '';
 
-  // the key comes from the environment so the public package never contains it
-  const apiKey = process.env.ELEVENLABS_API_KEY;
-  const elevenLabs = [...MCP_ADD, 'elevenlabs', '-e', `ELEVENLABS_API_KEY=${apiKey}`, '--', 'uvx', 'elevenlabs-mcp'];
-  const commands = apiKey ? [...CLAUDE_COMMANDS, elevenLabs] : CLAUDE_COMMANDS;
-  if (!apiKey) {
-    console.log(`  ${yellow('skip')}  elevenlabs ${dim('(set ELEVENLABS_API_KEY and run again)')}`);
+const toList = (value) => [value ?? []].flat().filter(isText);
+
+const readConfig = (configPath) => {
+  try {
+    return YAML.parse(fs.readFileSync(configPath, 'utf8')) ?? {};
+  } catch (error) {
+    console.log(`  ${yellow('skip')}  ${CONFIG_FILE} ${dim(`(${error.message.split('\n')[0]})`)}\n`);
+
+    return null;
   }
+};
+
+const toMcpCommand = (name, server) => {
+  if (isText(server?.url)) {
+    return [...MCP_ADD, '--transport', 'http', name, server.url];
+  }
+
+  if (!isText(server?.command)) {
+    console.log(`  ${yellow('skip')}  ${name} ${dim('(needs a url or a command)')}`);
+
+    return null;
+  }
+
+  const envKeys = toList(server.env);
+  const missingKeys = envKeys.filter((key) => !process.env[key]);
+  if (missingKeys.length > 0) {
+    console.log(`  ${yellow('skip')}  ${name} ${dim(`(set ${missingKeys.join(', ')} and run again)`)}`);
+
+    return null;
+  }
+
+  const env = envKeys.flatMap((key) => ['-e', `${key}=${process.env[key]}`]);
+
+  return [...MCP_ADD, name, ...env, '--', ...server.command.trim().split(/\s+/)];
+};
+
+const installClaudeExtensions = () => {
+  const configPath = path.join(TARGET_DIR, CONFIG_FILE);
+  console.log(`${bold('MCP servers and plugins')} ${dim(`from ${configPath}`)}\n`);
+
+  const config = readConfig(configPath);
+  if (!config) {
+    return;
+  }
+
+  const commands = [
+    ...Object.entries(config.mcp ?? {}).map(([name, server]) => toMcpCommand(name, server)),
+    ...toList(config.marketplaces).map((source) => ['plugin', 'marketplace', 'add', source]),
+    ...toList(config.plugins).map((plugin) => ['plugin', 'install', plugin]),
+  ].filter(Boolean);
 
   for (const claudeArgs of commands) {
     const result = spawnSync('claude', claudeArgs, { stdio: 'inherit' });
