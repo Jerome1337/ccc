@@ -2,10 +2,11 @@
 
 These rules apply whatever the framework. When a framework requires a specific form (file names, exports, component syntax, routing folders), the framework wins. The framework sections at the end cover the main cases.
 
+My global rules in `~/.claude/` MUST be followed even when a project rule says otherwise. When they conflict, follow the global rule and tell me about the conflict.
+
 ### Language
 - Identifiers, comments, commit messages and PR descriptions: English. User-facing text: French.
   Do: `const monthlyRent = …` · Don't: `const loyerMensuel = …`
-- Never add an AI co-author trailer or a "generated with" footer to commits or PRs.
 
 ### Formatting (the project's formatter wins on anything it decides)
 - 2 spaces, single quotes, semicolons, trailing commas, 120-column lines.
@@ -76,8 +77,15 @@ Apply these limits to code you write or change. Don't refactor untouched code ju
 - Put static content in typed data modules, not inline in components.
 - No barrel `index.ts` files.
 
+### Security
+- Never read, open, `cat`, `echo`, `grep`, `source` or print a `.env` or `.env.*` file (`.env.local`, `.env.production`…), with any tool. Only `.env.example` may be read. Reference environment variables by name, never by value.
+
 ### Git
 - Conventional Commits, lowercase, short subject: `feat: add rentability calculator`, `fix: typo`, `chore: update dependencies`.
+- Never mention Claude or AI in commits, branches, PRs or review comments: no `Co-Authored-By` trailer, no "Generated with Claude Code" or "written by Claude" footer, no session link.
+- Never push to `main` unless I ask for it. Work on a branch.
+- Before every push, run a review agent on the diff and fix what it finds.
+- When I allow a push, also open a PR with a title and a description.
 
 ### React (when the project uses it)
 - Type every component with `FC`, including async server components; destructure props in the parameter list.
