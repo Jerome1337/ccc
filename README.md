@@ -43,10 +43,18 @@ Existing files are skipped by default. Use `--force` to overwrite:
 npx @jerome1337/ccc init --force
 ```
 
+To update a project that already has the files, run `update`. It adds new files, skips the ones that are up to date and asks before overwriting each file that differs from the package version. Without a terminal it skips them. `--force` overwrites them without asking:
+
+```bash
+npx @jerome1337/ccc@latest update
+```
+
+Add `--global` to `init` or `update` to use `~/.claude/` instead of the current project. `AGENTS.md` is not copied there, and rules and skills go to `~/.claude/rules/` and `~/.claude/skills/`.
+
 ## How It Works
 
 - **CLAUDE.md** — Loaded automatically by Claude Code at the project root. Contains security guidelines and imports RTK.md and CODING_STYLE.md.
-- **CODING_STYLE.md** — Personal coding style that works with any framework (React, Astro, Vue…): language, formatting, naming, functions, types, errors, comments, and size and complexity limits based on SonarQube's TypeScript rules. Framework-specific rules sit in their own sections at the end. It can also be used globally: copy it to `~/.claude/` and add `@CODING_STYLE.md` to `~/.claude/CLAUDE.md`.
+- **CODING_STYLE.md** — Personal coding style that works with any framework (React, Astro, Vue…): language, formatting, naming, functions, types, errors, comments, and size and complexity limits based on SonarQube's TypeScript rules. Framework-specific rules sit in their own sections at the end. It can also be used globally: run `ccc init --global` and add `@CODING_STYLE.md` to `~/.claude/CLAUDE.md` if that file already existed.
 - **AGENTS.md** — Read by AI coding agents (Claude, Cursor, Copilot, etc.) for project conventions.
 - **rules/** — Files in `.claude/rules/` are automatically loaded by Claude Code based on their `alwaysApply` / `globs` frontmatter. All rules here use `alwaysApply: true`.
 - **skills/** — Files in `.claude/skills/` define custom slash commands for Claude Code. Invoke with `/skill-name` (e.g., `/pr-review`).
