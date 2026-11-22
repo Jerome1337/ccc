@@ -49,16 +49,30 @@ To update a project that already has the files, run `update`. It adds new files,
 npx @jerome1337/ccc@latest update
 ```
 
-Add `--global` to `init` or `update` to use `~/.claude/` instead of the current project. `AGENTS.md` is not copied there, and rules and skills go to `~/.claude/rules/` and `~/.claude/skills/`.
+Add `--global` to `init` or `update` to use `~/.claude/` instead of the current project. `AGENTS.md` is not copied there, `ccc.yml` is, and rules and skills go to `~/.claude/rules/` and `~/.claude/skills/`.
 
-`--global` also installs these MCP servers and plugins for your user with the `claude` CLI. The ones already installed are left as they are:
+`--global` also installs the MCP servers and plugins listed in `~/.claude/ccc.yml` for your user with the `claude` CLI. The ones already installed are left as they are. Edit the file and run `ccc update --global` again to apply it:
 
-| Type | Name |
-|---|---|
-| MCP server | `context7`, `stripe`, `heroui-react`, `elevenlabs` |
-| Plugin | `code-simplifier`, `frontend-design`, `brag`, `claude-seo`, `ponytail` |
+```yaml
+mcp:
+  heroui-react:
+    command: npx -y @heroui/react-mcp@latest   # stdio server, arguments split on spaces
+  elevenlabs:
+    command: uvx elevenlabs-mcp
+    env: [ELEVENLABS_API_KEY]                  # values read from your environment
+  sentry:
+    url: https://mcp.sentry.dev/mcp            # http server
 
-`elevenlabs` needs `uv` and is only added when `ELEVENLABS_API_KEY` is set in your environment. Export it from your shell profile or secret manager rather than typing it on the command line, so it stays out of your shell history.
+marketplaces:                                  # passed to claude plugin marketplace add
+  - anthropics/claude-plugins-official
+
+plugins:                                       # passed to claude plugin install
+  - context7@claude-plugins-official
+```
+
+The default `ccc.yml` installs `heroui-react` and `elevenlabs` as MCP servers, and `context7`, `stripe`, `code-simplifier`, `frontend-design`, `brag`, `claude-seo` and `ponytail` as plugins.
+
+A server whose `env` variables are missing is skipped, so `elevenlabs` is only added when `ELEVENLABS_API_KEY` is set. Export it from your shell profile or secret manager rather than typing it on the command line, so it stays out of your shell history. Like any `claude mcp add -e`, the value is then stored in `~/.claude.json`. `elevenlabs` also needs `uv`.
 
 `stripe` asks you to log in the first time you use it in Claude Code (`/mcp`).
 

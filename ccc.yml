@@ -1,0 +1,23 @@
+mcp:
+  heroui-react:
+    command: npx -y @heroui/react-mcp@latest
+  elevenlabs:
+    command: uvx elevenlabs-mcp
+    # read from your environment when ccc runs, the server is skipped while one is missing
+    env: [ELEVENLABS_API_KEY]
+
+marketplaces:
+  - anthropics/claude-plugins-official
+  - latent-spaces/brag
+  - AgriciDaniel/claude-seo
+  - https://github.com/DietrichGebert/ponytail.git
+
+plugins:
+  - context7@claude-plugins-official
+  - stripe@anthropic-plugin-directory
+  - code-simplifier@claude-plugins-official
+  - frontend-design@claude-plugins-official
+  - brag@brag
+  # no marketplace suffix: it was renamed upstream, so it differs between machines
+  - claude-seo
+  - ponytail@ponytail
