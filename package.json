@@ -1,6 +1,6 @@
 {
   "name": "@jerome1337/ccc",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Reusable Claude Code rules, CLAUDE.md, and AGENTS.md",
   "scripts": {
     "check": "biome check --write --unsafe",

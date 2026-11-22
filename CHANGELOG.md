@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/jerome1337/ccc/compare/v1.2.0...v1.2.1) (2026-11-22)
+
+
+### Bug Fixes
+
+* publish the skills folder so ccc init copies pr-review.md when installed from npm ([7670c5c](https://github.com/jerome1337/ccc/commit/7670c5c5881d3a59a6fc8db1095eceaaaa7a865b))
+
 # [1.2.0](https://github.com/jerome1337/ccc/compare/v1.1.0...v1.2.0) (2026-11-22)
 
 
