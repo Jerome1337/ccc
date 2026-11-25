@@ -70,7 +70,7 @@ plugins:                                       # passed to claude plugin install
   - context7@claude-plugins-official
 ```
 
-The default `ccc.yml` installs `heroui-react` and `elevenlabs` as MCP servers, and `context7`, `stripe`, `code-simplifier`, `frontend-design`, `brag`, `claude-seo` and `ponytail` as plugins.
+The default `ccc.yml` installs `heroui-react` and `elevenlabs` as MCP servers, and `context7`, `stripe`, `code-simplifier`, `frontend-design`, `brag`, `claude-seo`, `ponytail` and `humanizer` as plugins.
 
 A server whose `env` variables are missing is skipped, so `elevenlabs` is only added when `ELEVENLABS_API_KEY` is set. Export it from your shell profile or secret manager rather than typing it on the command line, so it stays out of your shell history. Like any `claude mcp add -e`, the value is then stored in `~/.claude.json`. `elevenlabs` also needs `uv`.
 
