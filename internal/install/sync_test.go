@@ -196,17 +196,17 @@ func TestEditedFileNoLongerShippedIsKept(t *testing.T) {
 	}
 }
 
-// TestMigrationFromVersion1 uses the real repo files: rules/*.md and the skill are unchanged since 1.x,
+// TestMigrationFromVersion1 uses the real rules/*.md, unchanged since 1.x, and the 1.x skill kept in testdata,
 // so their hashes are in legacyHashes.
 func TestMigrationFromVersion1(t *testing.T) {
 	repo := os.DirFS("../..")
 	target := t.TempDir()
 	for source, dest := range map[string]string{
-		"rules/architecture.md":     "rules/architecture.md",
-		"rules/patterns.md":         "rules/patterns.md",
-		"skills/pr-review/SKILL.md": "skills/pr-review.md",
+		"../../rules/architecture.md": "rules/architecture.md",
+		"../../rules/patterns.md":     "rules/patterns.md",
+		"testdata/pr-review-1.x.md":   "skills/pr-review.md",
 	} {
-		data, err := os.ReadFile(filepath.Join("../..", source))
+		data, err := os.ReadFile(source)
 		if err != nil {
 			t.Fatal(err)
 		}

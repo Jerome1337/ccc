@@ -13,11 +13,15 @@ func TestEmbeddedManifest(t *testing.T) {
 		mode install.Mode
 		want []string
 	}{
-		{install.Global, []string{"CLAUDE.md", "RTK.md", "CODING_STYLE.md", "ccc.yml", "skills/pr-review/SKILL.md"}},
+		{install.Global, []string{
+			"CLAUDE.md", "RTK.md", "CODING_STYLE.md", "ccc.yml",
+			"skills/pr-review/SKILL.md", "skills/pr-review/references/grading.md", "skills/pr-review/references/summary.md",
+		}},
 		{install.Project, []string{
 			"CLAUDE.md", "AGENTS.md", "RTK.md", "CODING_STYLE.md",
 			".claude/rules/architecture.md", ".claude/rules/code-style.md", ".claude/rules/commands.md", ".claude/rules/patterns.md",
-			".claude/skills/pr-review/SKILL.md",
+			".claude/skills/pr-review/SKILL.md", ".claude/skills/pr-review/references/grading.md",
+			".claude/skills/pr-review/references/summary.md",
 		}},
 	}
 	for _, testCase := range cases {
