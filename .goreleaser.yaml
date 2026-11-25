@@ -1,0 +1,31 @@
+version: 2
+project_name: ccc
+
+builds:
+  - main: .
+    binary: ccc
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+    goos: [darwin, linux]
+    goarch: [amd64, arm64]
+
+# Raw binaries, named for `ccc update` and install.sh: ccc_darwin_arm64, ccc_linux_amd64…
+# No UPX: it would break the ad-hoc signature Go adds to darwin/arm64 binaries.
+archives:
+  - formats: [binary]
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: checksums.txt
+
+# Release notes come from CHANGELOG.md, written by semantic-release (see publish.yml).
+changelog:
+  disable: true
+
+release:
+  # Lets a rerun from workflow_dispatch upload over a half-finished release.
+  replace_existing_artifacts: true
