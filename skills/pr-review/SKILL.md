@@ -80,7 +80,7 @@ When you are done, even when the review stops early, remove it: `git worktree re
 
 ## Step 3: Triage
 
-When a previous summary whose grades can be carried over exists, `git merge-base --is-ancestor <previous sha> HEAD` succeeds, and the merge base from Step 2 equals the previous base, the files missing from `git -c core.quotePath=false diff --name-only <previous sha> HEAD` keep their grade, reason, findings and nits from the previous summary, marked "(unchanged)", unless a file they depend on changed. A file the previous summary lists as not reviewed has no grade to keep: review it. Otherwise review every file: after a force-push, a merge of the base branch or a change of base, a file's PR diff can change while its content does not.
+When a previous summary whose grades can be carried over exists, `git merge-base --is-ancestor <previous sha> HEAD` succeeds, and the merge base from Step 2 equals the previous base, the files missing from `git -c core.quotePath=false diff --name-only <previous sha> HEAD` keep their grade, reason, findings and nits from the previous summary, marked "(unchanged)", unless a file they depend on changed. A file the previous summary lists as not reviewed, or groups by directory without a row of its own, has no grade to keep: review it. Otherwise review every file: after a force-push, a merge of the base branch or a change of base, a file's PR diff can change while its content does not.
 
 Sort the other files into two lists:
 
@@ -146,7 +146,7 @@ Then apply the result:
 
 - CONFIRMED: the finding stands. A question it found a trigger for becomes a `bug` or a `minor`, by the harm described in `references/grading.md`. A question confirmed without a trigger stays a question.
 - REFUTED: drop the finding and grade the file again without it.
-- UNSURE: keep it as a question and cap the file at 2, or at 3 when it would be a `minor` if confirmed.
+- UNSURE: keep it as a question and cap the file at 2, or at 3 when it would be a `minor` if confirmed. What it would be is its `wouldBe` for a question, and the reviewer's severity for a `bug` or a `minor`.
 
 ## Step 6: Show the result
 
