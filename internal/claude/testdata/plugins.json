@@ -1,0 +1,26 @@
+[
+  {
+    "id": "brag@brag",
+    "version": "0.6.0",
+    "scope": "user",
+    "enabled": true
+  },
+  {
+    "id": "claude-seo@agricidaniel-claude-seo",
+    "version": "2.6.2",
+    "scope": "user",
+    "enabled": true
+  },
+  {
+    "id": "context7@claude-plugins-official",
+    "version": "6985b2d88dc0",
+    "scope": "user",
+    "enabled": true
+  },
+  {
+    "id": "humanizer@humanizer",
+    "version": "4.0.0",
+    "scope": "user",
+    "enabled": true
+  }
+]

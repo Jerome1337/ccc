@@ -1,0 +1,22 @@
+[
+  {
+    "name": "agricidaniel-claude-seo",
+    "source": "github",
+    "repo": "AgriciDaniel/claude-seo"
+  },
+  {
+    "name": "brag",
+    "source": "github",
+    "repo": "latent-spaces/brag"
+  },
+  {
+    "name": "claude-plugins-official",
+    "source": "github",
+    "repo": "anthropics/claude-plugins-official"
+  },
+  {
+    "name": "ponytail",
+    "source": "git",
+    "url": "https://github.com/DietrichGebert/ponytail.git"
+  }
+]

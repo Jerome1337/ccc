@@ -1,16 +1,51 @@
-name: Publish to NPM
+# Keep this file name: npm trusted publishing (OIDC) is tied to it.
+name: Release
 
-run-name: Release version by @${{ github.actor }}
+run-name: ${{ github.event_name == 'pull_request' && 'Test' || 'Release' }} by @${{ github.actor }}
 
 on:
   push:
     branches:
       - main
-
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to build and upload binaries for, when GoReleaser failed after tagging (vX.Y.Z)
+        required: true
 
 jobs:
-  publish:
+  test:
     runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Check formatting
+        run: test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test -race ./...
+
+      - name: Check GoReleaser config
+        uses: goreleaser/goreleaser-action@v7
+        with:
+          version: "~> v2"
+          args: check
+
+  release:
+    needs: test
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    concurrency: release
 
     permissions:
       contents: write
@@ -23,6 +58,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -36,7 +72,31 @@ jobs:
         with:
           node-version: "lts/*"
 
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      # Computes the version from the commits, writes CHANGELOG.md, then commits and pushes the vX.Y.Z tag.
       - name: Semantic Release
+        if: github.event_name == 'push'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bun run release
+
+      # Same job on purpose: a tag pushed with GITHUB_TOKEN doesn't trigger other workflows.
+      - name: Find the release tag
+        id: tag
+        run: echo "tag=$(git tag --points-at HEAD --list 'v*' | head -n 1)" >> "$GITHUB_OUTPUT"
+
+      - name: Extract the release notes
+        if: steps.tag.outputs.tag != ''
+        run: awk '/^##? \[/ { section++ } section == 1' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
+
+      - name: Build and upload the binaries
+        if: steps.tag.outputs.tag != ''
+        uses: goreleaser/goreleaser-action@v7
+        with:
+          version: "~> v2"
+          args: release --clean --release-notes ${{ runner.temp }}/notes.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

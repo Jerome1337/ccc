@@ -1,57 +1,48 @@
 # ccc
 
-Reusable Claude Code Config, rules, skills, CLAUDE.md, RTK.md, CODING_STYLE.md and AGENTS.md for your projects.
+Reusable Claude Code config: `CLAUDE.md`, `RTK.md`, `CODING_STYLE.md`, `AGENTS.md`, rules, a PR review skill, and the MCP servers and plugins you want on every machine. One binary installs it and keeps it up to date.
 
-## Contents
+## Install
 
+```bash
+curl -fsSL https://raw.githubusercontent.com/Jerome1337/ccc/main/install.sh | sh
 ```
-claude-rules/
-├── CLAUDE.md       # Claude Code project instructions (security, RTK and coding style references)
-├── RTK.md          # Rust Token Killer instructions (token-optimized CLI proxy)
-├── CODING_STYLE.md # Framework-agnostic coding style: naming, structure, size and complexity limits
-├── AGENTS.md       # General AI agent instructions (conventions, structure, workflow)
-├── rules/          # Claude Code rules (auto-loaded by .claude/rules/)
-│   ├── architecture.md   # Monorepo structure, stack, import conventions
-│   ├── code-style.md     # Naming, exports, Biome, comments, reusability
-│   ├── commands.md       # Dev commands (build, lint, db, turbo)
-│   └── patterns.md       # Frontend patterns, auth routes, AI integration
-├── skills/         # Claude Code skills (auto-loaded by .claude/skills/)
-│   └── pr-review.md      # PR review skill
-└── README.md
-```
+
+This puts `ccc` in `~/.local/bin` (set `CCC_INSTALL_DIR` to pick another folder). It works on macOS and Linux, on amd64 and arm64.
 
 ## Usage
 
 ```bash
-npx @jerome1337/ccc init
+ccc update --global   # your user config in ~/.claude, plus MCP servers and plugins
+ccc init              # the current project
+ccc update            # the current project, later
 ```
 
-This copies the following into your project:
+`ccc update` first updates ccc itself to the latest release, then applies that version's files. Run it in a terminal, so it can ask about files you edited.
 
-| Source | Destination |
-|---|---|
-| `CLAUDE.md` | `./CLAUDE.md` |
-| `AGENTS.md` | `./AGENTS.md` |
-| `RTK.md` | `./RTK.md` |
-| `CODING_STYLE.md` | `./CODING_STYLE.md` |
-| `rules/*.md` | `./.claude/rules/*.md` |
-| `skills/*.md` | `./.claude/skills/*.md` |
+## What gets installed
 
-Existing files are skipped by default. Use `--force` to overwrite:
+| File | Project (`ccc init`) | Global (`--global`) |
+|---|---|---|
+| `CLAUDE.md`, `RTK.md`, `CODING_STYLE.md` | `./` | `~/.claude/` |
+| `AGENTS.md` | `./` | — |
+| `ccc.yml` | — | `~/.claude/` |
+| `rules/*.md` | `./.claude/rules/` | — |
+| `skills/pr-review/` | `./.claude/skills/` | `~/.claude/skills/` |
 
-```bash
-npx @jerome1337/ccc init --force
-```
+The rules are written for a Next.js stack, so they're only installed in projects. In `~/.claude` they would load in every project. With `CLAUDE_CONFIG_DIR` set, `--global` uses that folder instead of `~/.claude`.
 
-To update a project that already has the files, run `update`. It adds new files, skips the ones that are up to date and asks before overwriting each file that differs from the package version. Without a terminal it skips them. `--force` overwrites them without asking:
+## Your edits are kept
 
-```bash
-npx @jerome1337/ccc@latest update
-```
+ccc records the hash of every file it writes in `ccc-lock.json`: `~/.claude/ccc-lock.json`, or `.claude/ccc-lock.json` in a project. Commit the project one, so teammates get the same behavior.
 
-Add `--global` to `init` or `update` to use `~/.claude/` instead of the current project. `AGENTS.md` is not copied there, `ccc.yml` is, and rules and skills go to `~/.claude/rules/` and `~/.claude/skills/`.
+- A file you never edited is updated silently.
+- A file you edited: `ccc update` shows a diff and asks before overwriting it. If you answer no, ccc doesn't ask again until the next version of that file. Without a terminal, and with `ccc init`, it's skipped. `--force` overwrites it without asking.
+- A file ccc no longer ships is deleted if you never edited it, and kept otherwise.
 
-`--global` also installs the MCP servers and plugins listed in `~/.claude/ccc.yml` for your user with the `claude` CLI. The ones already installed are left as they are. Edit the file and run `ccc update --global` again to apply it:
+## MCP servers and plugins
+
+`--global` also installs the MCP servers and plugins listed in `~/.claude/ccc.yml` for your user, with the `claude` CLI. The ones already installed are left as they are. Edit the file and run `ccc update --global` again to apply it:
 
 ```yaml
 mcp:
@@ -74,21 +65,45 @@ The default `ccc.yml` installs `heroui-react` and `elevenlabs` as MCP servers, a
 
 A server whose `env` variables are missing is skipped, so `elevenlabs` is only added when `ELEVENLABS_API_KEY` is set. Export it from your shell profile or secret manager rather than typing it on the command line, so it stays out of your shell history. Like any `claude mcp add -e`, the value is then stored in `~/.claude.json`. `elevenlabs` also needs `uv`.
 
-Then, in Claude Code, run `/mcp` to log in to the servers that need it (like the one in the `stripe` plugin) and `/plugin` to set the options a plugin asks for (like `ponytail`). ccc reminds you at the end of the install.
+Then, in Claude Code, run `/mcp` to log in to the servers that need it (like the one in the `stripe` plugin) and `/plugin` to set the options a plugin asks for (like `ponytail`). ccc reminds you when it installed something.
 
-## How It Works
+## Updating ccc itself
 
-- **CLAUDE.md** — Loaded automatically by Claude Code at the project root. Contains security guidelines and imports RTK.md and CODING_STYLE.md.
-- **CODING_STYLE.md** — Personal coding style that works with any framework (React, Astro, Vue…): language, formatting, naming, functions, types, errors, comments, and size and complexity limits based on SonarQube's TypeScript rules. Framework-specific rules sit in their own sections at the end. It can also be used globally: run `ccc init --global` and add `@CODING_STYLE.md` to `~/.claude/CLAUDE.md` if that file already existed.
-- **AGENTS.md** — Read by AI coding agents (Claude, Cursor, Copilot, etc.) for project conventions.
-- **rules/** — Files in `.claude/rules/` are automatically loaded by Claude Code based on their `alwaysApply` / `globs` frontmatter. All rules here use `alwaysApply: true`.
-- **skills/** — Files in `.claude/skills/` define custom slash commands for Claude Code. Invoke with `/skill-name` (e.g., `/pr-review`).
+`ccc update` checks the latest GitHub release. When it's newer, ccc downloads the binary for your system, verifies its checksum, checks that it runs, replaces itself and continues with the new version. If anything fails, it keeps the current binary and still updates your files.
+
+- `CCC_NO_SELF_UPDATE=1` turns this off.
+- If the folder holding `ccc` isn't writable, ccc tells you to reinstall with the curl command instead of asking for `sudo`.
+- A binary downloaded with a browser on macOS is quarantined; run `xattr -d com.apple.quarantine ccc` once. The install script and `ccc update` don't have this problem.
+
+## Coming from the npm version
+
+The `@jerome1337/ccc` npm package is deprecated. Install the binary, then run `ccc update --global`, and `ccc update` in each project that used `npx @jerome1337/ccc init`.
+
+ccc recognizes the files the npm version installed. The ones you never edited are updated, or deleted when they moved: `~/.claude/rules/`, `~/.claude/AGENTS.md` and the old `skills/pr-review.md`. The ones you edited are kept.
+
+## Contents
+
+- **CLAUDE.md**: loaded automatically by Claude Code. Contains security guidelines and imports `RTK.md` and `CODING_STYLE.md`.
+- **RTK.md**: instructions for Rust Token Killer, a token-optimized CLI proxy.
+- **CODING_STYLE.md**: a coding style that works with any framework (React, Astro, Vue…): language, formatting, naming, functions, types, errors, comments, and size and complexity limits based on SonarQube's TypeScript rules.
+- **AGENTS.md**: read by AI coding agents (Claude, Cursor, Copilot…) for project conventions.
+- **rules/**: loaded by Claude Code from `.claude/rules/`. They all use `alwaysApply: true`.
+- **skills/**: each `skills/<name>/SKILL.md` adds a skill to Claude Code, like `/pr-review`.
 
 ## Customization
 
-`CODING_STYLE.md` doesn't depend on the stack and needs no changes. The files in `rules/` are tailored for a Next.js 16 + Turborepo + Bun + Drizzle + Biome + shadcn/ui stack. To adapt them for a different project:
+`CODING_STYLE.md` doesn't depend on the stack. The files in `rules/` are tailored for a Next.js 16 + Turborepo + Bun + Drizzle + Biome + shadcn/ui stack. To adapt them, edit them in your project: ccc keeps your edits.
 
 1. Update `rules/architecture.md` with your project structure
 2. Update `rules/commands.md` with your dev commands
 3. Update `rules/patterns.md` with your architecture patterns
 4. Adjust `rules/code-style.md` naming conventions if different
+
+## Development
+
+```bash
+go test -race ./...
+go build -ldflags "-X main.version=2.0.0" -o ccc .
+```
+
+The config files are embedded in the binary, so a release ships the code and the content together. Conventional Commits on `main` drive releases: semantic-release picks the version, writes `CHANGELOG.md` and tags it, and GoReleaser uploads the binaries and `checksums.txt` to the GitHub release.
