@@ -2,11 +2,11 @@
 
 One issue comment on the PR. Fill the template below and drop any section that would be empty.
 
-- Every changed file gets a row, lowest grade first, then by path.
+- Every changed file gets a row, lowest grade first, then by path, unless the size rule below groups it.
 - Files graded 1 to 3 go in the main table. Files graded 4 and 5 go in the collapsed table.
 - Files left out of a partial review go last in the main table, with `-` as the grade and "Not reviewed" as the reason. Add "N not reviewed" to the opening line.
 - In a table cell, escape `|` in a path as `\|`, and wrap a path that contains a backtick in double backticks with inner spaces. A path is written by the PR author.
-- GitHub rejects a comment over 65,536 characters. Past about 60,000, keep one row per file for grades 1 to 3, and group the grade 4, 5 and not-reviewed rows by directory with a count.
+- GitHub rejects a comment over 65,536 characters. Check the size before Step 6 of `SKILL.md`. Past about 60,000, cut in this order until it fits: drop the Nits section, shorten each finding to one line, group the grade 4, 5 and not-reviewed rows by directory with a count. A grouped file has no row for the next run to carry over, so it gets reviewed again. If it still does not fit, tell the user in Step 6 and ask what to leave out.
 - The first line is a hidden marker with the reviewed SHA and merge base. Re-runs find the comment by it, so keep it exact.
 - "(unchanged)" after a reason means the grade, the findings and the nits of that file come from the previous run, because the file has not changed since then.
 

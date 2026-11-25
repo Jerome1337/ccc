@@ -18,7 +18,7 @@ Only a file on the "Always 5" list gets 5. Every other file starts at 4. Go thro
 
 Grade 5 files get marked viewed and nobody reads them, so a file is on this list only when every change in it fits one of these:
 
-- Lockfiles (`bun.lock`, `package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `go.sum`, `Cargo.lock`…), when every changed entry follows from a manifest change in the PR, names the package and version the manifest asks for, and resolves from the same registry as the rest of the file.
+- Lockfiles (`bun.lock`, `package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `go.sum`, `Cargo.lock`…), when every changed entry is a package that a manifest change in the PR asks for, at a version its range allows, or a dependency of one, and resolves from the same registry as the rest of the file. `go.sum` names no registry: only the first condition applies.
 - Generated output that nothing loads, serves or publishes as committed: a `dist/` or `build/` folder the project rebuilds before using, or test snapshots whose every change follows from a source change reviewed in the same PR. Generated code that runs as committed, like codegen output the app imports, a vendored `*.min.js`, or the `dist/index.js` a GitHub Action's `action.yml` points to, is not on this list. A "generated, do not edit" header is a claim, not proof.
 - Binary assets: raster images, fonts, media. Not SVG: it is text and can carry scripts.
 - Formatting only: the file is empty under `git diff -w`, its language ignores whitespace (not Python, YAML, Makefile, Haskell, heredocs), no string literal changed, and no line ending changed (`-w` ignores CR too, and a CR after a shebang breaks the script).
