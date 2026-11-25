@@ -88,3 +88,21 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # The release notes GoReleaser just published, prepended to CHANGELOG.md on main.
+      # [skip ci] keeps this commit from starting another run; it's a docs: commit, so it never releases.
+      - name: Update CHANGELOG.md
+        if: steps.tag.outputs.tag != '' && github.event_name == 'push'
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          sh .github/scripts/update-changelog.sh "$TAG" "$REPOSITORY"
+          if git diff --quiet CHANGELOG.md; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "docs: update the changelog for $TAG [skip ci]" CHANGELOG.md
+          git pull --rebase origin main
+          git push origin HEAD:main
