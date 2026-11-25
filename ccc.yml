@@ -11,6 +11,7 @@ marketplaces:
   - latent-spaces/brag
   - AgriciDaniel/claude-seo
   - https://github.com/DietrichGebert/ponytail.git
+  - blader/humanizer
 
 plugins:
   - context7@claude-plugins-official
@@ -22,3 +23,4 @@ plugins:
   # no marketplace suffix: it was renamed upstream, so it differs between machines
   - claude-seo
   - ponytail@ponytail
+  - humanizer@humanizer
