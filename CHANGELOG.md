@@ -1,3 +1,13 @@
+# [1.3.0](https://github.com/jerome1337/ccc/compare/v1.2.1...v1.3.0) (2026-11-25)
+
+
+### Features
+
+* install the humanizer plugin by default with ccc --global ([1de8fb1](https://github.com/jerome1337/ccc/commit/1de8fb18b8ac250de613b83d4a5c14d4e0dabe65))
+* install your mcp servers and plugins with ccc init --global and ccc update --global ([40d405c](https://github.com/jerome1337/ccc/commit/40d405c9e4af3e0ec27a947677f9b4db4e984109))
+* read the mcp servers and plugins to install from an editable ccc.yml, and install stripe and context7 as plugins ([e8208a4](https://github.com/jerome1337/ccc/commit/e8208a4dd6d70b54dcdd58b66ecaf2e9c4604b03))
+* remind you to log in with /mcp and set up plugins with /plugin after ccc --global installs them ([c2a0dba](https://github.com/jerome1337/ccc/commit/c2a0dba66c4f349037d1404c4fe687da7713febc))
+
 ## [1.2.1](https://github.com/jerome1337/ccc/compare/v1.2.0...v1.2.1) (2026-11-22)
 
 
