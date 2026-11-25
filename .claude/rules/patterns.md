@@ -1,1 +1,1 @@
-./rules/patterns.md
+../../rules/patterns.md

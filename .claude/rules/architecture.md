@@ -1,1 +1,1 @@
-./rules/architecture.md
+../../rules/architecture.md

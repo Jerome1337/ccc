@@ -1,3 +1,5 @@
+Release notes for versions after 2.0.0 are on [GitHub Releases](https://github.com/Jerome1337/ccc/releases).
+
 # [2.0.0](https://github.com/Jerome1337/ccc/compare/v1.3.1...v2.0.0) (2026-11-25)
 
 

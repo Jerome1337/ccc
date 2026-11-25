@@ -1,1 +1,1 @@
-./rules/code-style.md
+../../rules/code-style.md
