@@ -1,1 +1,1 @@
-./rules/commands.md
+../../rules/commands.md

@@ -106,4 +106,9 @@ go test -race ./...
 go build -ldflags "-X main.version=2.0.0" -o ccc .
 ```
 
-The config files are embedded in the binary, so a release ships the code and the content together. Conventional Commits on `main` drive releases: semantic-release picks the version, writes `CHANGELOG.md` and tags it, and GoReleaser uploads the binaries and `checksums.txt` to the GitHub release.
+The config files are embedded in the binary, so a release ships the code and the content together. Conventional Commits on `main` drive releases:
+- [svu](https://github.com/caarlos0/svu) picks the next version (`fix:` → patch, `feat:` → minor, `!` or `BREAKING CHANGE:` → major) and tags it.
+- GoReleaser uploads the binaries and `checksums.txt` to the GitHub release, with notes grouped from the commits.
+- `chore:`, `docs:`, `test:` and `ci:` commits don't release anything.
+
+Release notes since 2.0.0 are on [GitHub Releases](https://github.com/Jerome1337/ccc/releases). `CHANGELOG.md` covers the versions before.

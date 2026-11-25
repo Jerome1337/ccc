@@ -22,9 +22,29 @@ archives:
 checksum:
   name_template: checksums.txt
 
-# Release notes come from CHANGELOG.md, written by semantic-release (see publish.yml).
+# Release notes, from the Conventional Commits since the previous tag.
 changelog:
-  disable: true
+  use: git
+  sort: asc
+  abbrev: 7
+  filters:
+    exclude:
+      - "^chore"
+      - "^docs"
+      - "^test"
+      - "^ci"
+  groups:
+    - title: Breaking changes
+      regexp: '^[a-z]+(\(.+\))?!:'
+      order: 0
+    - title: Features
+      regexp: '^feat(\(.+\))?:'
+      order: 1
+    - title: Fixes
+      regexp: '^fix(\(.+\))?:'
+      order: 2
+    - title: Other changes
+      order: 999
 
 release:
   # Lets a rerun from workflow_dispatch upload over a half-finished release.

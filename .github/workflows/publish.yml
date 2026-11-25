@@ -1,4 +1,3 @@
-# Keep this file name: npm trusted publishing (OIDC) is tied to it.
 name: Release
 
 run-name: ${{ github.event_name == 'pull_request' && 'Test' || 'Release' }} by @${{ github.actor }}
@@ -49,9 +48,6 @@ jobs:
 
     permissions:
       contents: write
-      issues: write
-      pull-requests: write
-      id-token: write
 
     steps:
       - name: Checkout repository
@@ -60,43 +56,35 @@ jobs:
           fetch-depth: 0
           ref: ${{ inputs.tag || github.ref }}
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Install Dependencies
-        run: bun install --frozen-lockfile
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: "lts/*"
-
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
 
-      # Computes the version from the commits, writes CHANGELOG.md, then commits and pushes the vX.Y.Z tag.
-      - name: Semantic Release
+      # svu reads the Conventional Commits since the last tag: fix → patch, feat → minor,
+      # `!` or BREAKING CHANGE → major, anything else → no release.
+      - name: Tag the next version
         if: github.event_name == 'push'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: bun run release
+          # svu needs a newer Go than go.mod; let Go fetch that toolchain.
+          GOTOOLCHAIN: auto
+        run: |
+          current=$(go run github.com/caarlos0/svu/v3@v3.4.4 current)
+          next=$(go run github.com/caarlos0/svu/v3@v3.4.4 next)
+          if [ "$next" != "$current" ]; then
+            git tag "$next"
+            git push origin "$next"
+          fi
 
       # Same job on purpose: a tag pushed with GITHUB_TOKEN doesn't trigger other workflows.
       - name: Find the release tag
         id: tag
         run: echo "tag=$(git tag --points-at HEAD --list 'v*' | head -n 1)" >> "$GITHUB_OUTPUT"
 
-      - name: Extract the release notes
-        if: steps.tag.outputs.tag != ''
-        run: awk '/^##? \[/ { section++ } section == 1' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
-
       - name: Build and upload the binaries
         if: steps.tag.outputs.tag != ''
         uses: goreleaser/goreleaser-action@v7
         with:
           version: "~> v2"
-          args: release --clean --release-notes ${{ runner.temp }}/notes.md
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
