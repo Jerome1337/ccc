@@ -1,3 +1,10 @@
+## [1.3.1](https://github.com/Jerome1337/ccc/compare/v1.3.0...v1.3.1) (2026-11-25)
+
+
+### Bug Fixes
+
+* match the github repository url case so npm accepts the provenance ([b5e4ce0](https://github.com/Jerome1337/ccc/commit/b5e4ce085b88d46e80031a596f601e8356b34a9a))
+
 # [1.3.0](https://github.com/jerome1337/ccc/compare/v1.2.1...v1.3.0) (2026-11-25)
 
 
