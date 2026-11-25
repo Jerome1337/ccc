@@ -5,7 +5,7 @@
   "scripts": {
     "check": "biome check --write --unsafe",
     "format": "biome format --write",
-    "release": "semantic-release -r git+https://github.com/jerome1337/ccc.git"
+    "release": "semantic-release -r git+https://github.com/Jerome1337/ccc.git"
   },
   "bin": {
     "ccc": "./bin/cli.js"
@@ -30,16 +30,16 @@
   "author": "Jérôme Pogeant <hello@jeromepogeant.com>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jerome1337/ccc.git"
+    "url": "git+https://github.com/Jerome1337/ccc.git"
   },
   "license": "MIT",
   "publishConfig": {
     "access": "public",
     "provenance": true
   },
-  "homepage": "https://github.com/jerome1337/ccc#readme",
+  "homepage": "https://github.com/Jerome1337/ccc#readme",
   "bugs": {
-    "url": "https://github.com/jerome1337/ccc/issues"
+    "url": "https://github.com/Jerome1337/ccc/issues"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.6",
