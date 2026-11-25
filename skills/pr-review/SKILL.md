@@ -30,7 +30,7 @@ gh api repos/<owner>/<repo>/pulls/<N>/comments --paginate
 gh api repos/<owner>/<repo>/pulls/<N>/reviews --paginate
 ```
 
-The previous summary, if any, is the most recent issue comment written by the user's own login that starts with `<!-- pr-review sha=… -->`. Note its id, `node_id` and SHA. Ignore marker comments from other people. Anyone with write access can edit a comment, so check who edited it last:
+The previous summary, if any, is the most recent issue comment written by the user's own login that starts with `<!-- pr-review sha=`. Note its id, `node_id`, SHA and base. A marker without a base comes from an older version of this skill: edit it in place, but carry nothing over. Ignore marker comments from other people. Anyone with write access can edit a comment, so check who edited it last:
 
 ```bash
 gh api graphql -f query='query($id: ID!) { node(id: $id) { ... on IssueComment { editor { login } } } }' -f id=<node_id>
@@ -60,6 +60,7 @@ git -C <tmp>/pr-<N> checkout --detach <headRefOid>
 From inside it, with `<base>` as `<remote>/<baseRefName>`:
 
 ```bash
+git merge-base <base> HEAD                                                # the merge base, recorded in the summary marker
 git -c core.quotePath=false diff --name-status -M <base>...HEAD           # the file list, renames as old and new path
 git -c core.quotePath=false diff --numstat -M <base>...HEAD               # changed lines per file
 git -c core.quotePath=false diff -w --numstat <base>...HEAD               # formatting-only files drop out
@@ -79,11 +80,11 @@ When you are done, even when the review stops early, remove it: `git worktree re
 
 ## Step 3: Triage
 
-When a previous summary whose grades can be carried over exists and `git merge-base --is-ancestor <previous sha> HEAD` succeeds, the files missing from `git -c core.quotePath=false diff --name-only <previous sha> HEAD` keep their grade, reason, findings and nits from the previous summary, marked "(unchanged)", unless a file they depend on changed. A file the previous summary lists as not reviewed has no grade to keep: review it. When the command fails, after a force-push for example, review every file.
+When a previous summary whose grades can be carried over exists, `git merge-base --is-ancestor <previous sha> HEAD` succeeds, and the merge base from Step 2 equals the previous base, the files missing from `git -c core.quotePath=false diff --name-only <previous sha> HEAD` keep their grade, reason, findings and nits from the previous summary, marked "(unchanged)", unless a file they depend on changed. A file the previous summary lists as not reviewed has no grade to keep: review it. Otherwise review every file: after a force-push, a merge of the base branch or a change of base, a file's PR diff can change while its content does not.
 
 Sort the other files into two lists:
 
-- **Grade 5 without a full review**: files that meet every condition of their entry in the "Always 5" list of `references/grading.md`. Check the conditions, not only the path: for a lockfile, each changed entry against the manifest diff and its registry; for build output, that nothing in the repo loads, serves or publishes it as committed. A file that fails a condition goes to the other list.
+- **Grade 5 without a full review**: files that meet every condition of their entry in the "Always 5" list of `references/grading.md`. Check the conditions, not only the path: for a lockfile, each changed entry against the manifest diff and its registry; for build output, that nothing in the repo loads, serves or publishes it as committed; for a rename, that a search of the repo for the old path and file name finds no reference left. A file that fails a condition goes to the other list.
 - **To review**: everything else.
 
 This step is the only one that gives grade 5. A file to review gets at most 4, whoever grades it.
@@ -127,8 +128,9 @@ Do not edit files, do not commit, do not post anything to GitHub.
 Return only a JSON array, one object per file:
 [{"path": "", "grade": 1, "reason": "", "lookAt": "",
   "findings": [{"startLine": 0, "line": 0, "severity": "bug|minor|question|nit",
-                "summary": "", "trigger": "", "fix": ""}]}]
+                "wouldBe": "bug|minor", "summary": "", "trigger": "", "fix": ""}]}]
 Use startLine only for a finding that spans several lines.
+Use wouldBe only for a question: what it would be if confirmed.
 ```
 
 Merge the results into one entry per file and remove duplicate findings. A 5 from a subagent counts as a 4. A finding that spans files, like a caller left out of date, goes on the file that needs the fix. When that file is not in the PR, it goes on the changed file that breaks it, in the summary only.
@@ -144,7 +146,7 @@ Then apply the result:
 
 - CONFIRMED: the finding stands. A question it found a trigger for becomes a `bug` or a `minor`, by the harm described in `references/grading.md`. A question confirmed without a trigger stays a question.
 - REFUTED: drop the finding and grade the file again without it.
-- UNSURE: keep it as a question and cap the file at 2, or at 3 when the finding was a `minor`.
+- UNSURE: keep it as a question and cap the file at 2, or at 3 when it would be a `minor` if confirmed.
 
 ## Step 6: Show the result
 
