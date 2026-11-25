@@ -1,3 +1,17 @@
+# [2.0.0](https://github.com/Jerome1337/ccc/compare/v1.3.1...v2.0.0) (2026-11-25)
+
+
+### Features
+
+* rewrite ccc as a go binary that updates itself ([1aa88f0](https://github.com/Jerome1337/ccc/commit/1aa88f0e6a8a7aae8f37559c0e5c4934af1c9ed5))
+
+
+### BREAKING CHANGES
+
+* the npm package now only prints how to install the binary.
+Install it with `curl -fsSL https://raw.githubusercontent.com/Jerome1337/ccc/main/install.sh | sh`,
+then run `ccc update --global`.
+
 ## [1.3.1](https://github.com/Jerome1337/ccc/compare/v1.3.0...v1.3.1) (2026-11-25)
 
 
