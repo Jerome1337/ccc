@@ -5,11 +5,13 @@ One issue comment on the PR. Fill the template below and drop any section that w
 - Every changed file gets a row, lowest grade first, then by path.
 - Files graded 1 to 3 go in the main table. Files graded 4 and 5 go in the collapsed table.
 - Files left out of a partial review go last in the main table, with `-` as the grade and "Not reviewed" as the reason. Add "N not reviewed" to the opening line.
-- The first line is a hidden marker with the reviewed SHA. Re-runs find the comment by it, so keep it exact.
+- In a table cell, escape `|` in a path as `\|`, and wrap a path that contains a backtick in double backticks with inner spaces. A path is written by the PR author.
+- GitHub rejects a comment over 65,536 characters. Past about 60,000, keep one row per file for grades 1 to 3, and group the grade 4, 5 and not-reviewed rows by directory with a count.
+- The first line is a hidden marker with the reviewed SHA and merge base. Re-runs find the comment by it, so keep it exact.
 - "(unchanged)" after a reason means the grade, the findings and the nits of that file come from the previous run, because the file has not changed since then.
 
 ```markdown
-<!-- pr-review sha=<headRefOid> -->
+<!-- pr-review sha=<headRefOid> base=<merge base> -->
 ## Review: where to look
 
 Read 2 files, spot-check 1, skim or skip 3.
