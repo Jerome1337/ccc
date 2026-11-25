@@ -4,6 +4,7 @@ One issue comment on the PR. Fill the template below and drop any section that w
 
 - Every changed file gets a row, lowest grade first, then by path.
 - Files graded 1 to 3 go in the main table. Files graded 4 and 5 go in the collapsed table.
+- Files left out of a partial review go last in the main table, with `-` as the grade and "Not reviewed" as the reason. Add "N not reviewed" to the opening line.
 - The first line is a hidden marker with the reviewed SHA. Re-runs find the comment by it, so keep it exact.
 - "(unchanged)" after a reason means the grade, the findings and the nits of that file come from the previous run, because the file has not changed since then.
 
@@ -11,7 +12,7 @@ One issue comment on the PR. Fill the template below and drop any section that w
 <!-- pr-review sha=<headRefOid> -->
 ## Review: where to look
 
-Read 2 files, spot-check 1, skim or skip 2.
+Read 2 files, spot-check 1, skim or skip 3.
 
 | Grade | File | Why | Look at |
 |:-:|---|---|---|
@@ -20,12 +21,13 @@ Read 2 files, spot-check 1, skim or skip 2.
 | 3 | `src/cart/total.ts` | New discount rounding, no test covers negative totals | `applyDiscount` |
 
 <details>
-<summary>2 files graded 4 or 5</summary>
+<summary>3 files graded 4 or 5</summary>
 
 | Grade | File | Why |
 |:-:|---|---|
+| 4 | `package.json` | Bumps `zod` from 3.23.8 to 3.24.1 |
 | 4 | `src/components/Header.tsx` | Copy change only |
-| 5 | `bun.lock` | Lockfile, matches the `package.json` change |
+| 5 | `bun.lock` | Lockfile, every entry follows the `zod` bump |
 
 </details>
 
@@ -45,7 +47,7 @@ The opening line counts the files a human has to act on: "Read" covers grades 1 
 
 ## Inline comments
 
-One per finding of severity `bug` or `question`, never for nits. Each body says what goes wrong, what triggers it, and the fix, in three short sentences at most. When the fix is a few changed lines, add a suggestion block:
+One per finding of severity `bug`, `minor` or `question`, never for nits. A finding outside a diff hunk, or on a file the PR does not change, stays out of the inline comments: Step 7 of `SKILL.md` says where it goes. Each body says what goes wrong, what triggers it, and the fix, in three short sentences at most. When the fix is a few changed lines, add a suggestion block:
 
 ````markdown
 A token that expired one second ago is accepted, because the comparison is inverted.
