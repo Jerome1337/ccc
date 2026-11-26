@@ -11,9 +11,9 @@ Give every changed file of a pull request a grade from 1 to 5: how confident the
 |:-:|---|---|
 | 5 | Marked viewed without being read: Skip list, formatting only, or a pure rename | Nothing to do |
 | 4 | Marked viewed: read, small, every case checked | Nothing to do |
-| 3 | Inline notes on the parts worth a glance | Optional |
-| 2 | Inline comments, on the must-review checklist | Must review |
-| 1 | Inline comment on a confirmed bug, on the must-review checklist | Must review carefully |
+| 3 | Inline notes where there is a risk worth a glance | Optional |
+| 2 | On the must-review checklist, with inline comments on its findings and notes | Must review |
+| 1 | On the must-review checklist, with an inline comment on the bug | Must review carefully |
 
 - `references/file-lists.md`: the Skip and Always review lists, used at triage.
 - `references/grading.md`: how to grade a file you read.
@@ -66,9 +66,9 @@ From inside it, with `<base>` as `<remote>/<baseRefName>`, run the first four to
 
 ```bash
 git merge-base <base> HEAD                                                # recorded in the summary marker
-git -c core.quotePath=false diff --name-status -M <base>...HEAD           # file list, renames with old and new path
-git -c core.quotePath=false diff --numstat -M <base>...HEAD               # changed lines per file
-git -c core.quotePath=false diff -w --numstat <base>...HEAD               # formatting-only files drop out
+git -c core.quotePath=false diff --raw -M <base>...HEAD                   # file list: modes, status, old and new path of renames
+git -c core.quotePath=false diff --numstat -M <base>...HEAD               # changed lines per file, a rename prints as old => new
+git -c core.quotePath=false diff -b --numstat --no-renames <base>...HEAD  # formatting-only files show 0 0 or drop out
 git --literal-pathspecs diff -M <base>...HEAD -- '<path>'                 # one file
 git --literal-pathspecs diff -M <base>...HEAD -- '<old path>' '<path>'    # one renamed file
 ```
@@ -85,16 +85,16 @@ When you are done, even when the review stops early: `git worktree remove --forc
 
 ## Step 3: Triage
 
-Triage uses paths and git output only. It opens no file.
+Triage uses paths and git output only, and opens no file.
 
 **Carry-over.** When the previous summary's grades can be carried over, `git merge-base --is-ancestor <previous sha> HEAD` succeeds, and the merge base equals the previous base, a file missing from `git -c core.quotePath=false diff --name-only <previous sha> HEAD` keeps its grade, reason, findings and checkbox, with "(unchanged)" after the reason. A file that was not reviewed, or that the previous summary grouped by directory, has nothing to keep: triage it. In every other case triage every file, since a force-push, a merge of the base branch or a new base can change a file's PR diff without changing the file.
 
 **Sort the other files.** Read `references/file-lists.md`, then put each file in the first group it matches:
 
-1. **Always review**: on that list. It gets at most 2. A secrets file gets grade 1 here and is never diffed, read or sent to a subagent, since a diff prints its content.
+1. **Always review**: on that list. It gets at most 2. A secrets file gets grade 1 here, and built output grade 2. Neither is read or sent to a subagent: a diff would print the secret, and built output cannot be checked by reading.
 2. **Skip**: on the Skip list. Grade 5, never opened.
-3. **Formatting only**: missing from the `-w --numstat` output or `0 0` there, in a language that ignores whitespace (not Python, YAML, Makefile or Haskell), and `git --literal-pathspecs diff <base>...HEAD -- '<path>' | grep -c $'\r'` prints 0. Grade 5.
-4. **Pure rename**: `R100` in `--name-status`, not a test, a migration or a file under `pages/`, `app/`, `routes/` or `.github/workflows/`, and `git grep -lF '<old file name>' HEAD` finds nothing. Grade 5.
+3. **Formatting only**: status `M` with the same mode on both sides in `--raw`, `0 0` or missing in the `-b --numstat` output, in a language where indentation carries no meaning (not Python, YAML, Makefile or Haskell), and `git --literal-pathspecs diff <base>...HEAD -- '<path>' | grep -c $'\r'` prints 0, since `-b` hides line-ending changes. Grade 5.
+4. **Pure rename**: `R100` with the same mode in `--raw`, not a test, a migration or a file under `pages/`, `app/`, `routes/` or `.github/workflows/`, and `git grep -lwF '<old name without extension>' HEAD` finds nothing, since imports usually drop the extension. For an `index.*` file, search the old directory name. Grade 5.
 5. **To review**: everything else.
 
 Only triage gives grade 5. A file someone reads gets at most 4.
@@ -132,6 +132,7 @@ Other files in this PR, for context only: <list>
 Read <this skill's directory>/references/grading.md and grade each of your files by it.
 Read the diff, then each of your files whole. Open another file only to check a caller, a type,
 a test or a reference. Do not edit, commit or post anything.
+Never open, grep or print these secrets files, and exclude them from searches: <list, or "none">.
 Before you report a bug, try to prove it wrong. If you cannot write its trigger, report a question.
 When you suspect two files contradict each other, compare them now and report a finding or nothing.
 
@@ -166,11 +167,11 @@ Do nothing on GitHub before the user answers.
 
 ## Step 7: Post
 
-First check that nobody pushed since the review: `gh pr view <N> --json headRefOid` must return the reviewed SHA. If it does not, post nothing and offer to run the review again. Then send the three calls together.
+First check that nobody pushed since the review: `gh pr view <N> --json headRefOid` must return the reviewed SHA. If it does not, post nothing and offer to run the review again. Then send the calls for the chosen option together.
 
 **Summary.** On a first run, `gh pr comment <N> --body-file <file>`. When a previous summary exists, edit it in place so the PR keeps one: `gh api 'repos/{owner}/{repo}/issues/comments/<id>' --method PATCH -F body=@<file>`.
 
-**Inline comments.** One review with the `COMMENT` event: `gh api 'repos/{owner}/{repo}/pulls/<N>/reviews' --method POST --input <review.json>`.
+**Inline comments.** One review with the `COMMENT` event: `gh api 'repos/{owner}/{repo}/pulls/<N>/reviews' --method POST --input <review.json>`. With no inline comment to post, skip this call.
 
 ```json
 {

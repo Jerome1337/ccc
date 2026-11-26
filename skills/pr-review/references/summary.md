@@ -15,7 +15,7 @@ One issue comment, short enough to read in 20 seconds. Fill the template and dro
 - `src/cart/total.ts` (3): new discount rounding, no test for negative totals
 
 <details>
-<summary>12 files marked viewed</summary>
+<summary>12 files you can skip</summary>
 
 | Grade | File | Why |
 |:-:|---|---|
