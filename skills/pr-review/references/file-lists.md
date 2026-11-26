@@ -9,22 +9,30 @@ Matching ignores case, and every pattern matches at any depth, so a monorepo pac
 The file goes on the must-review checklist with at most grade 2, whatever its diff looks like.
 
 - **Secrets, grade 1, never opened**: `.env` and `.env.*`, except a name ending in `.example`, `.sample`, `.template` or `.dist` (`.env.local.example` is not a secret); `*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.jks`, `*.keystore`, `id_rsa*` and `id_ed25519*` except `*.pub`; `.netrc`, `.pgpass`, `credentials*.json`, `service-account*.json`. Reason: "Secrets file committed". Do not read, print or quote its content.
-- **Built output, grade 2, not read**: `dist/**`, `build/**`, `*.generated.*`, `*.min.js`. It may run as committed, like the `dist/index.js` of a GitHub Action, and reading it proves nothing. Reason: what builds it, so the human can rebuild and compare.
+- **Built output, grade 2, not read**: `*.generated.*`, `*.min.js`, and `dist/**` or `build/**` when the folder sits next to a `package.json`, `go.mod`, `Cargo.toml` or `pyproject.toml`, so `scripts/build/release.ts` is still reviewed as source. Check with `git ls-tree --name-only HEAD -- '<parent>/'`. It may run as committed, like the `dist/index.js` of a GitHub Action, and reading it proves nothing. Reason: what builds it, so the human can rebuild and compare.
 - **Runs on install or on a developer's machine**: `package.json` when `scripts` change or a dependency is added; `.npmrc`, `.yarnrc*`, `bunfig.toml`; `.husky/**`, `lefthook.y*ml`, `.pre-commit-config.yaml`; `.claude/settings*.json`, `.mcp.json`, `.cursor/mcp.json`; `.vscode/tasks.json`, which can run a command when the folder opens; `.devcontainer/**`.
 - **CI, deploy, infrastructure**: `.github/workflows/**`, `.github/actions/**`, `action.y*ml`, `Dockerfile*`, `docker-compose*`, `compose.y*ml`, `*.tf`, `k8s/**`, `helm/**`, `vercel.json`, `netlify.toml`, `fly.toml`, `wrangler.toml`, `Procfile`, `.goreleaser.y*ml`, `CODEOWNERS`.
 - **Database**: `migrations/**`, `*.sql`, `prisma/schema.prisma`, `drizzle/**`, `seeds/**`.
 - **Auth, permissions, payments**: a code or config file, not an asset or a doc, whose path contains `auth`, `login`, `session`, `permission`, `role`, `payment`, `billing`, `checkout`, `stripe` or `webhook`, and `middleware.*`. A path where `auth` only appears inside the word `author` or `authors` does not count. `authorize` does.
 - **Public contracts**: `openapi.*`, `swagger.*`, `*.proto`, `*.graphql`.
-- **A lockfile that adds a new source**: a host or a `git+`, `github:` or `file:` source the base version did not use. It is the only guard on a file nobody opens, so list the sources of both versions and compare them, instead of reading the diff by eye. Any output sends the file here. A new lockfile has no base version, so all its sources count as new. `bun.lockb` is binary: review it like any other file.
+- **A lockfile that adds a new source**: a registry host, or a git, `github:`, `file:` or local path source, that the base version did not use. Registry sources compare by host, so a version bump is not new, and git and path sources compare in full, so `github.com/evil/repo` is new next to `github.com/good/repo`. It is the only guard on a file nobody opens, so compare by command, not by eye. Any output sends the file here. A new lockfile has no base version, so all its sources count as new. `bun.lockb` is binary: review it like any other file.
 
   ```bash
-  sources() { grep -oE '[a-z+]+://[^/" ]+|(github|gitlab|bitbucket|file|link):' | sort -u; }
+  sources() { grep -oE 'git\+[a-z]+://[^#" ]+|git@[^ "]+|(github|gitlab|bitbucket|file|link):[^#" ]+|[a-z]+://[^/" ]+|(path|directory|editable) = "[^"]+"' | sort -u; }
   comm -13 <(git show <merge base>:'<path>' 2>/dev/null | sources) <(git show HEAD:'<path>' | sources)
   ```
 
-- **Agent files that run commands**: a `.claude/**/*.md` file whose diff adds a `` !`command` `` line, which runs in a shell when the command loads, or changes `allowed-tools`. Check with `git --literal-pathspecs diff <base>...HEAD -- '<path>' | grep -E '^\+.*(!`|allowed-tools)'`.
+  `go.sum` has no URLs: compare its module paths with `awk '{print $1}' | sort -u` in place of `sources`.
 
-These two checks are the only diffs triage reads for a file on the Skip list.
+- **Agent files that run commands**: a `.claude/**/*.md` file whose frontmatter changed (`allowed-tools`, `hooks`, the model or anything else between the first two `---` lines), or whose diff adds a shell line, the `` !` `` inline form or a code block opened with `` ```! ``. Either command printing anything sends the file here.
+
+  ```bash
+  frontmatter() { awk 'NR==1 && /^---$/ {f=1; next} f && /^---$/ {exit} f'; }
+  diff <(git show <merge base>:'<path>' 2>/dev/null | frontmatter) <(git show HEAD:'<path>' | frontmatter)
+  git --literal-pathspecs diff <base>...HEAD -- '<path>' | grep -E '^\+.*!`|^\+```!'
+  ```
+
+These two checks are the only contents triage reads for a file on the Skip list.
 
 ## Skip
 
