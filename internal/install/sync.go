@@ -32,7 +32,9 @@ type Prompter interface {
 }
 
 type Options struct {
-	Content  fs.FS
+	Content fs.FS
+	// Source is the config repo Content was read from; empty means the built-in config and its layout.
+	Source   string
 	Target   string
 	Mode     Mode
 	IsUpdate bool
@@ -63,7 +65,11 @@ type change struct {
 
 // Sync brings the target folder to the shipped version and saves the lock, even after a partial failure.
 func Sync(options Options) (Result, error) {
-	entries, err := Manifest(options.Content, options.Mode)
+	manifest := Manifest
+	if options.Source != "" {
+		manifest = SourceManifest
+	}
+	entries, err := manifest(options.Content, options.Mode)
 	if err != nil {
 		return Result{}, err
 	}
@@ -73,11 +79,23 @@ func Sync(options Options) (Result, error) {
 		return Result{}, err
 	}
 
+	if exists && current.Source != options.Source {
+		fmt.Fprintf(options.Out, "  %s  %s → %s\n\n", term.Cyan("switch"), sourceName(current.Source), sourceName(options.Source))
+	}
 	syncer := &syncer{options: options, lock: current}
 	err = syncer.run(entries, syncer.unshippedPaths(entries, !exists))
 	syncer.lock.Version = options.Version
+	syncer.lock.Source = options.Source
 
 	return syncer.result, errors.Join(err, lock.Write(path, syncer.lock))
+}
+
+func sourceName(source string) string {
+	if source == "" {
+		return "the built-in config"
+	}
+
+	return source
 }
 
 func (syncer *syncer) run(entries []Entry, unshipped []string) error {

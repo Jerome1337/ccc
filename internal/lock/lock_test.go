@@ -45,6 +45,17 @@ func TestRoundTrip(t *testing.T) {
 	}
 }
 
+func TestSourceRaisesSchema(t *testing.T) {
+	path := filepath.Join(t.TempDir(), FileName)
+	if err := Write(path, Lock{Source: "someone/config", Files: map[string]File{}}); err != nil {
+		t.Fatal(err)
+	}
+	read, _, err := Read(path)
+	if err != nil || read.Schema != sourceSchema || read.Source != "someone/config" {
+		t.Errorf("Read() = %+v err=%v, want the source with schema %d", read, err, sourceSchema)
+	}
+}
+
 func TestReadRefusesNewerSchema(t *testing.T) {
 	path := filepath.Join(t.TempDir(), FileName)
 	if err := os.WriteFile(path, []byte(`{"schema": 99, "files": {}}`), 0o644); err != nil {

@@ -7,21 +7,23 @@
 [![License: MIT](https://img.shields.io/github/license/Jerome1337/ccc)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/Jerome1337/ccc?style=social)](https://github.com/Jerome1337/ccc/stargazers)
 
-A command-line config manager for [Claude Code](https://code.claude.com). One command installs your `CLAUDE.md`, rules, skills, MCP servers and plugins on a new machine or in a new project, and the same command keeps them up to date. When you have edited a file, ccc shows you the diff and asks before it overwrites it.
+A command-line config manager for [Claude Code](https://code.claude.com). Keep your `CLAUDE.md`, rules, skills, agents, MCP servers and plugins in one git repo. One command installs them on a new machine or in a new project, and the same command keeps them up to date. When you have edited a file, ccc shows you the diff and asks before it overwrites it.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Jerome1337/ccc/main/install.sh | sh
-ccc update --global
+ccc export --global ~/claude-config             # once: turn the setup you have into a repo, then push it
+ccc update --global --from you/claude-config    # on every other machine
 ```
 
 ## Why
 
 A Claude Code setup lives in several places: `~/.claude` for your user, `.claude/` in each repo, and `~/.claude.json` for MCP servers. Getting the same setup on a second laptop, a dev server or a teammate's machine usually means copying files by hand and retyping `claude mcp add` commands, and the copies drift apart as you change one of them.
 
-ccc ships the whole setup inside one binary. Each release carries the files and the code that installs them, so every machine that runs `ccc update` ends up with the same version.
+With ccc, the setup lives in one repo. Every machine that runs `ccc update` installs what the repo holds, so they all end up with the same files. If you don't have a repo yet, `ccc export` makes one from the setup you already have. And with no repo at all, ccc installs the starter config built into each release.
 
 - One static Go binary for macOS and Linux, on amd64 and arm64. No Node, no npm.
 - Installs for your user (`--global`) or for the current project (`init`).
+- Reads your config from a GitHub repo, any URL `git clone` accepts, or a local folder.
 - Adds the MCP servers and plugins listed in a YAML file, through the `claude` CLI.
 - Records a hash of every file it writes, so it can tell your edits from its own files.
 - Updates itself from GitHub releases and checks each download against `checksums.txt`.
@@ -41,12 +43,53 @@ The script puts `ccc` in `~/.local/bin`. Set `CCC_INSTALL_DIR` to pick another f
 |---|---|
 | `ccc update --global` | Installs or updates your user config in `~/.claude`, plus the MCP servers and plugins |
 | `ccc init` | Installs the config in the current project |
-| `ccc update` | Updates the current project to the latest release |
+| `ccc update` | Updates the current project's config |
+| `ccc export --global <folder>` | Copies the config in `~/.claude` into `<folder>/global/`, ready to push as a config repo |
+| `ccc export <folder>` | Copies the current project's config into `<folder>/project/` |
 | `ccc version` | Prints the installed version |
 
-`--force` (`-f`) overwrites the files you edited without asking, and `-g` is short for `--global`. Run `ccc update` in a terminal, so it can show you diffs and ask about your edits.
+`--from <repo>` makes `init` and `update` install from your config repo instead of the starter config, and ccc remembers it for later runs. `--force` (`-f`) overwrites the files you edited without asking, and `-g` is short for `--global`. Run `ccc update` in a terminal, so it can show you diffs and ask about your edits.
 
-## What gets installed
+## Your config repo
+
+A config repo has two folders, each laid out like the place its files land. Every file in them is installed, and files outside them, like a README, are ignored.
+
+```
+claude-config/
+├── global/              → ~/.claude
+│   ├── CLAUDE.md
+│   ├── ccc.yml          MCP servers and plugins, see below
+│   ├── agents/
+│   └── skills/
+└── project/             → the project root
+    ├── CLAUDE.md
+    ├── AGENTS.md
+    └── .claude/
+        ├── rules/
+        └── settings.json
+```
+
+`--from` takes `owner/repo` for GitHub, any URL `git clone` accepts (GitLab, a private repo over SSH), or a local folder such as `./claude-config` or `~/claude-config`, so you can try your config before you push it. ccc fetches repos with `git`, so a private repo works wherever `git clone` does. ccc only reads files inside the repo, and refuses a symlink that points outside it.
+
+The repo is saved in `ccc-lock.json`, so later runs of `ccc init` and `ccc update` fetch it again without `--from`. Commit the project's lock, and your teammates get the same config when they run `ccc update`. A local folder only works on your machine, so switch to a git URL before you commit. Everyone who runs `ccc update` in the project installs what that repo holds, hooks in `settings.json` included, so review a change to the lock's `source` as you would a new dependency.
+
+When you switch to another source, ccc says so, and deletes the files of the old one you never edited.
+
+### Start from the setup you have
+
+```bash
+ccc export --global ~/claude-config        # from ~/.claude
+cd my-project && ccc export ~/claude-config # from this project
+cd ~/claude-config && git init && git add . && git commit -m "feat: my claude code config"
+```
+
+Export copies `CLAUDE.md`, `AGENTS.md`, the files they import with `@path`, and the `agents/`, `commands/`, `skills/`, `rules/` and `output-styles/` folders, from `.claude/` in a project. The global export also copies `ccc.yml`. It skips the skills another tool installs again on each machine: symlinks such as the ones `npx skills` creates, and `skills/synced/`, which Claude Code syncs from claude.ai. A symlinked `CLAUDE.md` or `skills/` folder from your dotfiles is still copied. It also skips dot files such as a skill's `.git` folder, and leaves out `settings.json` (which can hold API keys), hooks, history and caches, so add the ones you want by hand. It won't write into an existing `global/` or `project/` folder unless you pass `--force`.
+
+Push the folder to GitHub, then run `ccc update --global --from you/claude-config` on your other machines, and `ccc init --from you/claude-config` in your projects.
+
+## The starter config
+
+Without `--from`, ccc installs the config built into each release:
 
 | File | Project (`ccc init`) | Global (`--global`) | What it is |
 |---|---|---|---|
@@ -107,15 +150,15 @@ Run `/pr-review 42` in Claude Code, or `/pr-review` on a branch that has an open
 
 Lockfiles, lint config, docs and assets get a 5 without being read. Secrets, CI, migrations, auth code, git hooks and install-time `package.json` scripts always go on the must-review list. Larger PRs are split across parallel reviewers, and the skill aims to finish in about three minutes. Nothing is posted until you confirm, unless you pass `--auto` for scripts and CI.
 
-## Make it yours
+## Forking ccc
 
-ccc installs the files in this repo, so a fork gives you a ccc that installs your own setup:
+A config repo covers your own setup. Fork ccc only to change the starter config built into the binary:
 
 1. Fork the repo and replace `CLAUDE.md`, `RTK.md`, `CODING_STYLE.md`, `AGENTS.md`, `rules/`, `skills/` and `ccc.yml` with yours. To drop a file instead, also remove it from the `go:embed` line in `main.go` and from the file lists in `internal/install/manifest.go`.
 2. Point `DefaultBaseURL` and `InstallCommand` in `internal/selfupdate/selfupdate.go`, `releases_url` in `install.sh`, and the `curl` lines of this README at your fork.
 3. Enable Actions in your fork, since GitHub turns them off on forks. Then push a `feat:` commit to `main`. The release workflow tags a version and uploads the binaries with GitHub's built-in token, so there is no secret to set up.
 
-For small changes you don't need a fork: edit the installed files in your project, and ccc keeps your edits.
+For small changes you don't need a fork or a repo: edit the installed files, and ccc keeps your edits.
 
 ## Self-update
 
@@ -138,7 +181,7 @@ go test -race ./...
 go build -ldflags "-X main.version=2.0.0" -o ccc .
 ```
 
-The config files are embedded in the binary with `go:embed`. Conventional Commits on `main` drive releases:
+The starter config is embedded in the binary with `go:embed`. Conventional Commits on `main` drive releases:
 
 - [svu](https://github.com/caarlos0/svu) picks the next version from the commits (`fix:` is a patch, `feat:` a minor, `!` or `BREAKING CHANGE:` a major) and tags it.
 - [GoReleaser](https://goreleaser.com) uploads the binaries and `checksums.txt` to the GitHub release, with notes grouped from the commits.

@@ -3,6 +3,7 @@ package install
 import (
 	"bytes"
 	"encoding/json"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
@@ -95,6 +96,58 @@ func TestManifest(t *testing.T) {
 		if !slices.Equal(dests, testCase.want) {
 			t.Errorf("Manifest(%v) = %v\nwant %v", testCase.mode, dests, testCase.want)
 		}
+	}
+}
+
+func TestSyncFromSource(t *testing.T) {
+	repo := content(map[string]string{
+		"README.md": "not installed\n", "global/CLAUDE.md": "global\n", "global/agents/a.md": "agent\n",
+		"project/CLAUDE.md": "project\n", "project/.claude/settings.json": "{}\n",
+	})
+	target := t.TempDir()
+	result, _ := syncWith(t, Options{Content: repo, Source: "someone/config", Target: target, Mode: Global})
+	if result.Changed != 2 || readFile(t, filepath.Join(target, "agents", "a.md")) != "agent\n" {
+		t.Errorf("global sync = %+v, want global/ copied into the target", result)
+	}
+	if source, err := LockedSource(target, Global); err != nil || source != "someone/config" {
+		t.Errorf("LockedSource() = %q err=%v", source, err)
+	}
+
+	project := t.TempDir()
+	syncWith(t, Options{Content: repo, Source: "someone/config", Target: project, Mode: Project})
+	if readFile(t, filepath.Join(project, ".claude", "settings.json")) != "{}\n" {
+		t.Error("project/.claude/settings.json should land in the project's .claude folder")
+	}
+
+	delete(repo, "project/CLAUDE.md")
+	delete(repo, "project/.claude/settings.json")
+	_, err := Sync(Options{Content: repo, Source: "someone/config", Target: t.TempDir(), Mode: Project, Prompter: &fakePrompter{}, Out: &bytes.Buffer{}})
+	if err == nil || !strings.Contains(err.Error(), "no project/ folder") {
+		t.Errorf("Sync() err = %v, want a missing project/ folder error", err)
+	}
+}
+
+// TestSwitchSource reports the switch, and an empty folder in the new source deletes nothing.
+func TestSwitchSource(t *testing.T) {
+	target := t.TempDir()
+	syncWith(t, Options{Content: version1(), Target: target, Mode: Project})
+
+	empty := fstest.MapFS{"project": &fstest.MapFile{Mode: fs.ModeDir}}
+	_, err := Sync(Options{Content: empty, Source: "someone/empty", Target: target, Mode: Project, Prompter: &fakePrompter{}, Out: &bytes.Buffer{}})
+	if err == nil || !strings.Contains(err.Error(), "is empty") {
+		t.Fatalf("Sync() err = %v, want an empty project/ folder error", err)
+	}
+	if readFile(t, filepath.Join(target, "RTK.md")) != "rtk v1\n" {
+		t.Error("an empty source must not delete the installed files")
+	}
+
+	repo := content(map[string]string{"project/CLAUDE.md": "from the repo\n"})
+	_, out := syncWith(t, Options{Content: repo, Source: "someone/config", Target: target, Mode: Project})
+	if !strings.Contains(out, "the built-in config → someone/config") {
+		t.Errorf("output should report the source switch\n%s", out)
+	}
+	if _, err := os.Stat(filepath.Join(target, "RTK.md")); !os.IsNotExist(err) {
+		t.Error("RTK.md, unedited and not in the new source, should be deleted")
 	}
 }
 
