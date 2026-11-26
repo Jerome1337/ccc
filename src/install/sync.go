@@ -13,9 +13,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/Jerome1337/ccc/internal/diff"
-	"github.com/Jerome1337/ccc/internal/lock"
-	"github.com/Jerome1337/ccc/internal/term"
+	"github.com/Jerome1337/ccc/src/diff"
+	"github.com/Jerome1337/ccc/src/lock"
+	"github.com/Jerome1337/ccc/src/term"
 )
 
 const (

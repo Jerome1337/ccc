@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Jerome1337/ccc/internal/install"
+	"github.com/Jerome1337/ccc/src/install"
 )
 
 func TestParseArgs(t *testing.T) {

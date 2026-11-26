@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Jerome1337/ccc/internal/install"
-	"github.com/Jerome1337/ccc/internal/source"
+	"github.com/Jerome1337/ccc/src/install"
+	"github.com/Jerome1337/ccc/src/source"
 )
 
 func writeFiles(t *testing.T, root string, files map[string]string) {

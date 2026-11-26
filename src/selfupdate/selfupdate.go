@@ -21,7 +21,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Jerome1337/ccc/internal/term"
+	"github.com/Jerome1337/ccc/src/term"
 )
 
 const (

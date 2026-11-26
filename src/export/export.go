@@ -13,8 +13,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/Jerome1337/ccc/internal/install"
-	"github.com/Jerome1337/ccc/internal/term"
+	"github.com/Jerome1337/ccc/src/install"
+	"github.com/Jerome1337/ccc/src/term"
 )
 
 const (

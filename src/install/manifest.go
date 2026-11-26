@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Jerome1337/ccc/internal/lock"
+	"github.com/Jerome1337/ccc/src/lock"
 )
 
 type Mode int

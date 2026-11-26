@@ -11,7 +11,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/Jerome1337/ccc/internal/lock"
+	"github.com/Jerome1337/ccc/src/lock"
 )
 
 type fakePrompter struct {

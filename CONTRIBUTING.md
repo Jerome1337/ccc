@@ -37,13 +37,13 @@ A `ccc.yml` in the test repo makes ccc run `claude mcp add` and `claude plugin i
 ## Where the code lives
 
 - `main.go` parses the arguments and runs the commands.
-- `internal/source` fetches a config repo: a local folder, or a `git clone` into a temporary folder.
-- `internal/install` maps the repo's `global/` or `project/` folder onto the target and writes the lock. `decide.go` holds every rule about a single file in one pure function, so a new rule is one more row in `decide_test.go`.
-- `internal/export` copies the config on a machine into a repo folder.
-- `internal/lock` reads and writes `ccc-lock.json`.
-- `internal/config` reads `ccc.yml`, and `internal/claude` installs its MCP servers and plugins through the `claude` CLI.
-- `internal/selfupdate` replaces the binary with the latest release.
-- `internal/diff` and `internal/term` print the diff before an overwrite, the colors and the y/N prompts.
+- `src/source` fetches a config repo: a local folder, or a `git clone` into a temporary folder.
+- `src/install` maps the repo's `global/` or `project/` folder onto the target and writes the lock. `decide.go` holds every rule about a single file in one pure function, so a new rule is one more row in `decide_test.go`.
+- `src/export` copies the config on a machine into a repo folder.
+- `src/lock` reads and writes `ccc-lock.json`.
+- `src/config` reads `ccc.yml`, and `src/claude` installs its MCP servers and plugins through the `claude` CLI.
+- `src/selfupdate` replaces the binary with the latest release.
+- `src/diff` and `src/term` print the diff before an overwrite, the colors and the y/N prompts.
 
 ## Commits and releases
 

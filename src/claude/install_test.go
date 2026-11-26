@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Jerome1337/ccc/internal/config"
+	"github.com/Jerome1337/ccc/src/config"
 )
 
 // fakeRunner answers the two listings from testdata and records every other call.
