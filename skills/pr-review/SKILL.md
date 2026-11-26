@@ -1,6 +1,6 @@
 ---
 name: pr-review
-description: Reviews a GitHub pull request in a few minutes and grades every changed file from 1 to 5 by how confident the review is that a human can skip it. Files graded 4 and 5 are marked viewed, grade 3 gets optional inline notes, grades 1 and 2 get inline comments and a must-review checklist. Posts only after the user confirms. Use whenever the user wants to review a pull request, triage a large PR, know which files of a PR to look at, or comment on a PR. Triggers on "review PR", "review pull request", "review PR #N", "which files should I look at", "code review PR", "comment on PR", even when the user only gives a PR number.
+description: Reviews a GitHub pull request in a few minutes and grades every changed file from 1 to 5 by how confident the review is that a human can skip it. Files graded 4 and 5 are marked viewed, grade 3 gets optional inline notes, grades 1 and 2 get inline comments and a must-review checklist. Posts only after the user confirms, or right away with `--auto` for CI and scripts. Use whenever the user wants to review a pull request, triage a large PR, know which files of a PR to look at, or comment on a PR. Triggers on "review PR", "review pull request", "review PR #N", "which files should I look at", "code review PR", "comment on PR", even when the user only gives a PR number.
 ---
 
 # PR Review
@@ -21,9 +21,11 @@ Give every changed file of a pull request a grade from 1 to 5: how confident the
 
 **Be fast.** The user expects the result in about 3 minutes. Send independent commands in one message, never open a file on the Skip list, read only what a grade needs, and launch every subagent at once.
 
+**`--auto`.** When the arguments include `--auto`, nobody is there to answer, so never ask a question: each step says what to do instead. It is for CI and scripts, like `git push && claude -p "/pr-review --auto"`.
+
 ## Step 1: Load the PR
 
-You need a PR number or URL. Ask for it if the user did not give one. If `gh auth status` fails, tell the user to run `gh auth login`.
+You need a PR number or URL. Without one, use the PR of the current branch: `gh pr view --json number`. If there is none, ask, or with `--auto`, stop. If `gh auth status` fails, tell the user to run `gh auth login`.
 
 Run these together. Inside a clone of the PR's repository, `gh` fills in `{owner}` and `{repo}`. Outside one, prefix every `gh` command with `GH_REPO=<owner>/<repo>`, taken from the PR URL.
 
@@ -34,7 +36,7 @@ gh api 'repos/{owner}/{repo}/issues/<N>/comments' --paginate
 gh api 'repos/{owner}/{repo}/pulls/<N>/comments' --paginate
 ```
 
-- If the PR is merged or closed, say so and ask before going further.
+- If the PR is merged or closed, say so and ask before going further. With `--auto`, stop.
 - Files are graded against what the PR says it does. Read a linked issue only when the description does not say.
 - The previous summary, if any, is the latest issue comment by the user's own login that starts with `<!-- pr-review sha=`. Note its id, `node_id`, SHA and base. Ignore marker comments by other people. A marker without a base comes from an older version: edit that comment in place, but carry nothing over.
 - Anyone with write access can edit a comment. Before carrying grades over, check who edited it last:
@@ -115,7 +117,7 @@ Only triage gives grade 5. A file someone reads gets at most 4.
 | Up to 60 files | Parallel subagents, Step 4b |
 | Over 60 files | Tell the user the size and ask whether to review all of it or only some directories |
 
-When the user picks some directories, pick the mode again for those. The other files go on the must-review checklist as "not reviewed". They are never marked viewed and never carried over.
+With `--auto`, review the 60 files with the most changed lines, Always review files first. When the user picks some directories, pick the mode again for those. The other files go on the must-review checklist as "not reviewed". They are never marked viewed and never carried over.
 
 ## Step 4a: Review yourself
 
@@ -171,11 +173,11 @@ Show the user the summary, the inline comments and the number of files to mark v
 2. Post the summary only.
 3. Post nothing.
 
-Do nothing on GitHub before the user answers.
+Do nothing on GitHub before the user answers. With `--auto`, skip the question: print the summary and post everything.
 
 ## Step 7: Post
 
-First check that nobody pushed since the review: `gh pr view <N> --json headRefOid` must return the reviewed SHA. If it does not, post nothing and offer to run the review again. Then send the calls for the chosen option together.
+First check that nobody pushed since the review: `gh pr view <N> --json headRefOid` must return the reviewed SHA. If it does not, post nothing and offer to run the review again. With `--auto`, just stop: the run for the newer push reviews it. Then send the calls for the chosen option together.
 
 **Summary.** On a first run, `gh pr comment <N> --body-file <file>`. When a previous summary exists, edit it in place so the PR keeps one: `gh api 'repos/{owner}/{repo}/issues/comments/<id>' --method PATCH -F body=@<file>`.
 
