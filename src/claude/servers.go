@@ -5,8 +5,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/Jerome1337/ccc/internal/config"
-	"github.com/Jerome1337/ccc/internal/term"
+	"github.com/Jerome1337/ccc/src/config"
+	"github.com/Jerome1337/ccc/src/term"
 )
 
 const existsMarker = "already exists"

@@ -9,13 +9,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Jerome1337/ccc/internal/claude"
-	"github.com/Jerome1337/ccc/internal/config"
-	"github.com/Jerome1337/ccc/internal/export"
-	"github.com/Jerome1337/ccc/internal/install"
-	"github.com/Jerome1337/ccc/internal/selfupdate"
-	"github.com/Jerome1337/ccc/internal/source"
-	"github.com/Jerome1337/ccc/internal/term"
+	"github.com/Jerome1337/ccc/src/claude"
+	"github.com/Jerome1337/ccc/src/config"
+	"github.com/Jerome1337/ccc/src/export"
+	"github.com/Jerome1337/ccc/src/install"
+	"github.com/Jerome1337/ccc/src/selfupdate"
+	"github.com/Jerome1337/ccc/src/source"
+	"github.com/Jerome1337/ccc/src/term"
 )
 
 // version is set at build time with -ldflags "-X main.version=…". `ccc version` prints it alone

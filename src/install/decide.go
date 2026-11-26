@@ -1,6 +1,6 @@
 package install
 
-import "github.com/Jerome1337/ccc/internal/lock"
+import "github.com/Jerome1337/ccc/src/lock"
 
 type Action int
 

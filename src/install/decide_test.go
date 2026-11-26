@@ -3,7 +3,7 @@ package install
 import (
 	"testing"
 
-	"github.com/Jerome1337/ccc/internal/lock"
+	"github.com/Jerome1337/ccc/src/lock"
 )
 
 func TestDecide(t *testing.T) {
