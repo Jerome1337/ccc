@@ -93,7 +93,13 @@ Triage uses paths and git output only, and opens no file.
 
 1. **Always review**: on that list. It gets at most 2. A secrets file gets grade 1 here, and built output grade 2. Neither is read or sent to a subagent: a diff would print the secret, and built output cannot be checked by reading.
 2. **Skip**: on the Skip list. Grade 5, never opened.
-3. **Formatting only**: status `M` with the same mode on both sides in `--raw`, `0 0` or missing in the `-b --numstat` output, in a language where indentation carries no meaning (not Python, YAML, Makefile or Haskell), and `git --literal-pathspecs diff <base>...HEAD -- '<path>' | grep -c $'\r'` prints 0, since `-b` hides line-ending changes. Grade 5.
+3. **Formatting only**: status `M` with the same mode on both sides in `--raw`, `0 0` or missing in the `-b --numstat` output, in a language where indentation carries no meaning (not Python, YAML, Makefile or Haskell), and both commands below print nothing. `-b` only picks the candidates: it also hides a change inside a line, like `', '` becoming `',  '` in a string, and a line-ending change. Grade 5.
+
+   ```bash
+   strip() { sed 's/^[[:space:]]*//; s/[[:space:]]*$//'; }
+   diff <(git show <merge base>:'<path>' | strip) <(git show HEAD:'<path>' | strip)   # only indentation and trailing spaces changed
+   git --literal-pathspecs diff <base>...HEAD -- '<path>' | grep $'\r'                  # no line ending changed
+   ```
 4. **Pure rename**: `R100` with the same mode in `--raw`, not a test, a migration or a file under `pages/`, `app/`, `routes/` or `.github/workflows/`, and `git grep -lwF '<old name without extension>' HEAD` finds nothing, since imports usually drop the extension. For an `index.*` file, search the old directory name. Grade 5.
 5. **To review**: everything else.
 
@@ -196,6 +202,8 @@ gh api graphql \
   }' \
   -f pr=<id> -f p0='<path>' -f p1='<path>'
 ```
+
+Each alias succeeds or fails on its own. If the response has `errors`, tell the user which files were not marked.
 
 This changes only the user's own view of the PR. GitHub clears the mark when a later commit changes the file.
 
