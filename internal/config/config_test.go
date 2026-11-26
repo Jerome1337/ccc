@@ -1,29 +1,41 @@
 package config
 
 import (
-	"os"
 	"slices"
 	"testing"
 )
 
-func TestParseShippedConfig(t *testing.T) {
-	data, err := os.ReadFile("../../ccc.yml")
+// readmeExample is the ccc.yml shown in the README.
+const readmeExample = `mcp:
+  heroui-react:
+    command: npx -y @heroui/react-mcp@latest   # stdio server, arguments split on spaces
+  elevenlabs:
+    command: uvx elevenlabs-mcp
+    env: [ELEVENLABS_API_KEY]                  # read from your environment
+  sentry:
+    url: https://mcp.sentry.dev/mcp            # http server
+
+marketplaces:                                  # passed to claude plugin marketplace add
+  - anthropics/claude-plugins-official
+
+plugins:                                       # passed to claude plugin install
+  - context7@claude-plugins-official
+`
+
+func TestParseReadmeExample(t *testing.T) {
+	current, err := Parse([]byte(readmeExample))
 	if err != nil {
 		t.Fatal(err)
 	}
-	current, err := Parse(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(current.MCP) != 2 || len(current.Marketplaces) != 5 || len(current.Plugins) != 8 {
-		t.Fatalf("got %d servers, %d marketplaces, %d plugins, want 2, 5, 8",
+	if len(current.MCP) != 3 || len(current.Marketplaces) != 1 || len(current.Plugins) != 1 {
+		t.Fatalf("got %d servers, %d marketplaces, %d plugins, want 3, 1, 1",
 			len(current.MCP), len(current.Marketplaces), len(current.Plugins))
 	}
 	if !slices.Equal(current.MCP["elevenlabs"].Env, []string{"ELEVENLABS_API_KEY"}) {
 		t.Errorf("elevenlabs env = %v", current.MCP["elevenlabs"].Env)
 	}
-	if !slices.Contains(current.Plugins, "humanizer@humanizer") {
-		t.Errorf("plugins = %v, want humanizer@humanizer", current.Plugins)
+	if current.MCP["sentry"].URL != "https://mcp.sentry.dev/mcp" {
+		t.Errorf("sentry url = %q", current.MCP["sentry"].URL)
 	}
 }
 

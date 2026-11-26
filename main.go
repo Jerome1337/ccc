@@ -1,8 +1,7 @@
-// Command ccc installs and updates a reusable Claude Code config, in a project or in ~/.claude.
+// Command ccc installs and updates a Claude Code config from a git repo, in a project or in ~/.claude.
 package main
 
 import (
-	"embed"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -19,27 +18,27 @@ import (
 	"github.com/Jerome1337/ccc/internal/term"
 )
 
-//go:embed CLAUDE.md AGENTS.md RTK.md CODING_STYLE.md ccc.yml rules/*.md skills
-var content embed.FS
-
 // version is set at build time with -ldflags "-X main.version=…". `ccc version` prints it alone
 // on one line: the self-update smoke test of older binaries depends on that output.
 var version = "dev"
 
 const (
-	configFile  = "ccc.yml"
-	exitUsage   = 2
-	exitFailure = 1
-	usage       = `Usage: ccc [init|update|export <folder>|version] [--global] [--force] [--from <repo>]
+	configFile = "ccc.yml"
+	// defaultRepoFolder, in the home folder, is where ccc offers to export a config that has no repo yet.
+	defaultRepoFolder = "claude-config"
+	exitUsage         = 2
+	exitFailure       = 1
+	usage             = `Usage: ccc [init|update|export <folder>|version] [--global] [--force] [--from <repo>]
 
-  init      Copy the config into the current project (the default)
+  init      Install the config in the current project (the default)
   update    Update ccc itself, then the config, MCP servers and plugins
   export    Copy the config you already have into <folder>, laid out as a config repo
   version   Print the version
   --global  Use ~/.claude (or $CLAUDE_CONFIG_DIR) and install MCP servers and plugins
   --force   Overwrite files you edited, without asking
-  --from    Install from a config repo: owner/repo on GitHub, a git URL or a local folder.
-            ccc remembers it, so later updates come from the same repo
+  --from    The config repo: owner/repo on GitHub, a git URL or a local folder.
+            ccc remembers it, so later updates come from the same repo.
+            Without one, ccc offers to export the config on this machine
 `
 )
 
@@ -55,13 +54,6 @@ type options struct {
 	folder   string
 	isGlobal bool
 	isForced bool
-}
-
-// configSource is the config to install: a fetched repo, or the files built into ccc when name is empty.
-type configSource struct {
-	files fs.FS
-	name  string
-	close func()
 }
 
 func main() {
@@ -145,12 +137,19 @@ func run(opts options) error {
 		return exportConfig(opts, target, mode)
 	}
 
-	repo, err := openSource(opts.from, target, mode)
+	from, err := chooseSource(opts.from, target, mode)
 	if err != nil {
 		return err
 	}
-	defer repo.close()
-	sync := install.Options{Content: repo.files, Source: repo.name, Target: target, Mode: mode}
+	if from == "" {
+		return offerExport(opts, target, mode)
+	}
+	files, closeSource, err := openSource(from, mode)
+	if err != nil {
+		return err
+	}
+	defer closeSource()
+	sync := install.Options{Content: files, Source: from, Target: target, Mode: mode}
 	if err := syncFiles(opts, sync); err != nil {
 		return err
 	}
@@ -183,27 +182,55 @@ func resolveTarget(isGlobal bool) (string, install.Mode, error) {
 	return dir, install.Project, err
 }
 
-// openSource picks the config to install: --from, else the repo the lock remembers, else the built-in one.
-func openSource(from, target string, mode install.Mode) (configSource, error) {
-	from = source.Resolve(from)
-	if from == "" {
-		locked, err := install.LockedSource(target, mode)
-		if err != nil {
-			return configSource{}, err
-		}
-		from = locked
-	}
-	if from == "" {
-		return configSource{files: content, close: func() {}}, nil
+// chooseSource is --from, else the repo the lock remembers. It's empty when there's no config repo yet.
+func chooseSource(from, target string, mode install.Mode) (string, error) {
+	if from != "" {
+		return source.Resolve(from), nil
 	}
 
+	return install.LockedSource(target, mode)
+}
+
+func openSource(from string, mode install.Mode) (fs.FS, func(), error) {
 	fmt.Printf("%s %s\n\n", term.Bold("Config"), term.Dim(from))
 	if mode == install.Project && filepath.IsAbs(from) {
 		fmt.Printf("  %s  %s\n\n", term.Yellow("note  "), term.Dim("a local folder only works on this machine, use a git URL before you commit .claude/ccc-lock.json"))
 	}
-	files, closeSource, err := source.Open(from)
 
-	return configSource{files: files, name: from, close: closeSource}, err
+	return source.Open(from)
+}
+
+// offerExport starts a config repo from the config already on this machine, since there's none to install.
+func offerExport(opts options, target string, mode install.Mode) error {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+	opts.folder = filepath.Join(home, defaultRepoFolder)
+	exported := filepath.Join(opts.folder, install.SourceDir(mode))
+	if info, err := os.Stat(exported); err == nil && info.IsDir() {
+		fmt.Printf("%s\n\n  %s\n", term.Bold("No config repo yet"), term.Dim(exported+" is ready."))
+		printNextSteps(opts.folder, mode)
+
+		return nil
+	}
+
+	fmt.Printf("%s\n\n", term.Bold("No config repo yet"))
+	if install.IsManaged(target, mode) {
+		fmt.Printf("  %s\n\n", term.Dim("These files came from the config older ccc versions had built in. Pass --from <owner/repo> to switch to your repo."))
+	}
+	prompter := term.NewPrompter(os.Stdin, os.Stdout, term.IsInteractive())
+	if !prompter.CanAsk() {
+		return errors.New("no config repo yet, pass --from <owner/repo>, or run ccc in a terminal to export the config on this machine")
+	}
+	if !prompter.Confirm(fmt.Sprintf("  Export the config on this machine to %s?", opts.folder)) {
+		fmt.Printf("\n  %s\n\n", term.Dim("Pass --from <owner/repo> to install a config repo, or run ccc export <folder> to make one."))
+
+		return nil
+	}
+	fmt.Println()
+
+	return exportConfig(opts, target, mode)
 }
 
 func syncFiles(opts options, sync install.Options) error {
@@ -238,15 +265,25 @@ func exportConfig(opts options, from string, mode install.Mode) error {
 		return err
 	}
 
-	next := "ccc init --from <you>/<repo> in your projects"
-	if mode == install.Global {
-		next = "ccc update --global --from <you>/<repo> on your other machines"
-	}
 	fmt.Printf("\n  %s\n", term.Bold(fmt.Sprintf("%d copied", copied)))
 	fmt.Printf("  %s\n", term.Dim("settings.json and hooks stay on this machine: settings.json can hold API keys."))
-	fmt.Printf("  %s\n\n", term.Dim(fmt.Sprintf("Push %s to GitHub, then run %s.", to, next)))
+	printNextSteps(to, mode)
 
 	return nil
+}
+
+// printNextSteps tells the user how to push the exported folder and install it from there.
+func printNextSteps(folder string, mode install.Mode) {
+	name := filepath.Base(folder)
+	command := "ccc init --from <you>/" + name
+	if mode == install.Global {
+		command = "ccc update --global --from <you>/" + name
+	}
+
+	fmt.Printf("\n  Push it to a repo of your own:\n\n")
+	fmt.Printf("    cd %s && git init && git add . && git commit -m \"feat: claude code config\"\n", folder)
+	fmt.Printf("    gh repo create %s --private --source . --push\n\n", name)
+	fmt.Printf("  Then install it, here and on your other machines:\n\n    %s\n\n", command)
 }
 
 // installExtensions never fails the command: a missing claude CLI or a broken ccc.yml only skips this step.

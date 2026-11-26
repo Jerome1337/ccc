@@ -1,10 +1,6 @@
 package install
 
-import (
-	"slices"
-
-	"github.com/Jerome1337/ccc/internal/lock"
-)
+import "github.com/Jerome1337/ccc/internal/lock"
 
 type Action int
 
@@ -36,7 +32,6 @@ type State struct {
 	Disk      string
 	Locked    lock.File
 	IsLocked  bool
-	Legacy    []string
 }
 
 type Context struct {
@@ -76,19 +71,15 @@ func decideUnshipped(state State) Action {
 	if isUnedited(state) {
 		return Remove
 	}
-	// Without a lock entry, a file at an old 1.x path that matches no 1.x hash may not be ccc's at all.
-	if state.IsLocked {
+	// ccc wrote the file and you edited it since. An entry with only a declined version means ccc never wrote it.
+	if state.IsLocked && state.Locked.SHA256 != "" {
 		return Release
 	}
 
 	return Forget
 }
 
-// isUnedited trusts the lock when there is one, and the 1.x hashes only for files ccc has never tracked.
+// isUnedited means the file still matches what the lock says ccc last wrote.
 func isUnedited(state State) bool {
-	if state.IsLocked {
-		return state.Locked.SHA256 != "" && state.Disk == state.Locked.SHA256
-	}
-
-	return slices.Contains(state.Legacy, state.Disk)
+	return state.IsLocked && state.Locked.SHA256 != "" && state.Disk == state.Locked.SHA256
 }

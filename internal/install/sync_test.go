@@ -44,10 +44,13 @@ func content(files map[string]string) fstest.MapFS {
 
 func version1() fstest.MapFS {
 	return content(map[string]string{
-		"CLAUDE.md": "claude v1\n", "AGENTS.md": "agents v1\n", "RTK.md": "rtk v1\n",
-		"CODING_STYLE.md": "style v1\n", "ccc.yml": "plugins: []\n",
-		"rules/a.md": "rule a v1\n", "rules/b.md": "rule b v1\n",
-		"skills/review/SKILL.md": "skill v1\n",
+		"README.md":         "not installed\n",
+		"project/CLAUDE.md": "claude v1\n", "project/AGENTS.md": "agents v1\n", "project/RTK.md": "rtk v1\n",
+		"project/CODING_STYLE.md":    "style v1\n",
+		"project/.claude/rules/a.md": "rule a v1\n", "project/.claude/rules/b.md": "rule b v1\n",
+		"project/.claude/skills/review/SKILL.md": "skill v1\n",
+		"global/CLAUDE.md":                       "claude v1\n", "global/RTK.md": "rtk v1\n", "global/CODING_STYLE.md": "style v1\n",
+		"global/ccc.yml": "plugins: []\n", "global/skills/review/SKILL.md": "skill v1\n",
 	})
 }
 
@@ -81,8 +84,8 @@ func TestManifest(t *testing.T) {
 		mode Mode
 		want []string
 	}{
-		{Global, []string{"CLAUDE.md", "RTK.md", "CODING_STYLE.md", "ccc.yml", "skills/review/SKILL.md"}},
-		{Project, []string{"CLAUDE.md", "AGENTS.md", "RTK.md", "CODING_STYLE.md", ".claude/rules/a.md", ".claude/rules/b.md", ".claude/skills/review/SKILL.md"}},
+		{Global, []string{"CLAUDE.md", "CODING_STYLE.md", "RTK.md", "ccc.yml", "skills/review/SKILL.md"}},
+		{Project, []string{".claude/rules/a.md", ".claude/rules/b.md", ".claude/skills/review/SKILL.md", "AGENTS.md", "CLAUDE.md", "CODING_STYLE.md", "RTK.md"}},
 	}
 	for _, testCase := range cases {
 		entries, err := Manifest(version1(), testCase.mode)
@@ -130,7 +133,17 @@ func TestSyncFromSource(t *testing.T) {
 // TestSwitchSource reports the switch, and an empty folder in the new source deletes nothing.
 func TestSwitchSource(t *testing.T) {
 	target := t.TempDir()
+	if IsManaged(target, Project) {
+		t.Fatal("an empty folder isn't managed")
+	}
 	syncWith(t, Options{Content: version1(), Target: target, Mode: Project})
+	if !IsManaged(target, Project) {
+		t.Fatal("a folder with a lock is managed")
+	}
+	edited := filepath.Join(target, "AGENTS.md")
+	if err := os.WriteFile(edited, []byte("my agents\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	empty := fstest.MapFS{"project": &fstest.MapFile{Mode: fs.ModeDir}}
 	_, err := Sync(Options{Content: empty, Source: "someone/empty", Target: target, Mode: Project, Prompter: &fakePrompter{}, Out: &bytes.Buffer{}})
@@ -148,6 +161,9 @@ func TestSwitchSource(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(target, "RTK.md")); !os.IsNotExist(err) {
 		t.Error("RTK.md, unedited and not in the new source, should be deleted")
+	}
+	if readFile(t, edited) != "my agents\n" || !strings.Contains(out, "no longer managed") {
+		t.Errorf("an edited file of the old source should be kept\n%s", out)
 	}
 }
 
@@ -177,9 +193,9 @@ func TestUpdateKeepsEditsAndRemovesDroppedFiles(t *testing.T) {
 	}
 
 	version2 := version1()
-	version2["RTK.md"] = &fstest.MapFile{Data: []byte("rtk v2\n")}
-	version2["CLAUDE.md"] = &fstest.MapFile{Data: []byte("claude v2\n")}
-	delete(version2, "rules/b.md")
+	version2["project/RTK.md"] = &fstest.MapFile{Data: []byte("rtk v2\n")}
+	version2["project/CLAUDE.md"] = &fstest.MapFile{Data: []byte("claude v2\n")}
+	delete(version2, "project/.claude/rules/b.md")
 
 	prompter := &fakePrompter{canAsk: true, answers: []bool{false}}
 	result, out := syncWith(t, Options{Content: version2, Target: target, Mode: Project, IsUpdate: true, Prompter: prompter})
@@ -221,7 +237,7 @@ func TestUpdateWithoutTerminalSkipsEdits(t *testing.T) {
 		t.Fatal(err)
 	}
 	version2 := version1()
-	version2["ccc.yml"] = &fstest.MapFile{Data: []byte("plugins: [new]\n")}
+	version2["global/ccc.yml"] = &fstest.MapFile{Data: []byte("plugins: [new]\n")}
 
 	_, out := syncWith(t, Options{Content: version2, Target: target, Mode: Global, IsUpdate: true})
 	if readFile(t, filepath.Join(target, "ccc.yml")) != "plugins: [mine]\n" || !strings.Contains(out, "in a terminal") {
@@ -237,7 +253,7 @@ func TestEditedFileNoLongerShippedIsKept(t *testing.T) {
 		t.Fatal(err)
 	}
 	version2 := version1()
-	delete(version2, "rules/a.md")
+	delete(version2, "project/.claude/rules/a.md")
 
 	_, out := syncWith(t, Options{Content: version2, Target: target, Mode: Project, IsUpdate: true})
 	if readFile(t, path) != "my rule\n" || !strings.Contains(out, "no longer managed") {
@@ -246,51 +262,6 @@ func TestEditedFileNoLongerShippedIsKept(t *testing.T) {
 	current, _, _ := lock.Read(filepath.Join(target, ".claude", lock.FileName))
 	if _, isTracked := current.Files[".claude/rules/a.md"]; isTracked {
 		t.Error("a released file should leave the lock")
-	}
-}
-
-// TestMigrationFromVersion1 uses the real rules/*.md, unchanged since 1.x, and the 1.x skill kept in testdata,
-// so their hashes are in legacyHashes.
-func TestMigrationFromVersion1(t *testing.T) {
-	repo := os.DirFS("../..")
-	target := t.TempDir()
-	for source, dest := range map[string]string{
-		"../../rules/architecture.md": "rules/architecture.md",
-		"../../rules/patterns.md":     "rules/patterns.md",
-		"testdata/pr-review-1.x.md":   "skills/pr-review.md",
-	} {
-		data, err := os.ReadFile(source)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if err := os.MkdirAll(filepath.Dir(filepath.Join(target, dest)), 0o755); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(filepath.Join(target, dest), data, 0o644); err != nil {
-			t.Fatal(err)
-		}
-	}
-	mine := filepath.Join(target, "rules", "commands.md")
-	if err := os.WriteFile(mine, []byte("edited by hand\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	prompter := &fakePrompter{canAsk: true}
-	_, out := syncWith(t, Options{Content: repo, Target: target, Mode: Global, IsUpdate: true, Prompter: prompter})
-
-	if len(prompter.questions) != 0 {
-		t.Errorf("migration asked %v, want no prompt\n%s", prompter.questions, out)
-	}
-	for _, gone := range []string{"rules/architecture.md", "rules/patterns.md", "skills/pr-review.md"} {
-		if _, err := os.Stat(filepath.Join(target, gone)); !os.IsNotExist(err) {
-			t.Errorf("%s should be deleted", gone)
-		}
-	}
-	if readFile(t, mine) != "edited by hand\n" {
-		t.Error("an edited 1.x rule must be kept")
-	}
-	if _, err := os.Stat(filepath.Join(target, "skills", "pr-review", "SKILL.md")); err != nil {
-		t.Error("the skill should be installed in its folder")
 	}
 }
 
