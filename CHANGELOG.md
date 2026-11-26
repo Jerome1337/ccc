@@ -1,3 +1,19 @@
+# [2.1.0](https://github.com/Jerome1337/ccc/compare/v2.0.0...v2.1.0) (2026-11-26)
+
+### Features
+* ee2e9e2 feat: add --auto mode to pr-review
+* 6a9b339 feat: grade pr files by review confidence
+* 38a4d34 feat: speed up pr-review and skip config files
+### Fixes
+* d35b052 fix: address pr-review review comments
+* 92bbc27 fix: close pr-review --auto gaps
+* 8dd8345 fix: close pr-review carry-over and grade 5 gaps
+* aa525c9 fix: close pr-review triage gaps
+* 58993f6 fix: harden pr-review grading and path handling
+* b365414 fix: keep pr-review carry-over and summary size consistent
+* 9d369a6 fix: make pr-review notes name a concrete risk
+* 6e15d49 fix: tighten pr-review triage checks
+
 # [2.0.0](https://github.com/Jerome1337/ccc/compare/v1.3.1...v2.0.0) (2026-11-25)
 
 
