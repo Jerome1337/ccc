@@ -1,3 +1,10 @@
+# [3.0.0](https://github.com/Jerome1337/ccc/compare/v2.1.0...v3.0.0) (2026-11-26)
+
+### Breaking changes
+* a14f4c2 feat!: drop the built-in config
+### Features
+* a8735ff feat: install a config repo with --from and create one with export
+
 # [2.1.0](https://github.com/Jerome1337/ccc/compare/v2.0.0...v2.1.0) (2026-11-26)
 
 ### Features
