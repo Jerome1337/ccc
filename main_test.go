@@ -54,6 +54,13 @@ func TestParseArgs(t *testing.T) {
 		{[]string{"-h"}, options{command: "help"}, true},
 		{[]string{"update", "init"}, options{}, false},
 		{[]string{"--globl"}, options{}, false},
+		{[]string{"init", "--from", "someone/config"}, options{command: "init", from: "someone/config"}, true},
+		{[]string{"--from"}, options{}, false},
+		{[]string{"--from", ""}, options{}, false},
+		{[]string{"export", "./repo", "-g"}, options{command: "export", folder: "./repo", isGlobal: true}, true},
+		{[]string{"export"}, options{}, false},
+		{[]string{"export", "./repo", "./other"}, options{}, false},
+		{[]string{"export", "./repo", "--from", "someone/config"}, options{}, false},
 	}
 	for _, testCase := range cases {
 		got, err := parseArgs(testCase.args)

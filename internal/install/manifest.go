@@ -2,10 +2,13 @@
 package install
 
 import (
+	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/Jerome1337/ccc/internal/lock"
 )
@@ -21,6 +24,8 @@ const (
 	projectConfigDir = ".claude"
 	rulesDir         = "rules"
 	skillsDir        = "skills"
+	globalSourceDir  = "global"
+	projectSourceDir = "project"
 )
 
 var (
@@ -52,7 +57,7 @@ func Manifest(content fs.FS, mode Mode) ([]Entry, error) {
 		folders = []string{rulesDir, skillsDir}
 	}
 	for _, folder := range folders {
-		nested, err := walk(content, folder, prefix)
+		nested, err := walk(content, folder, func(source string) string { return prefix + source })
 		if err != nil {
 			return nil, err
 		}
@@ -62,13 +67,37 @@ func Manifest(content fs.FS, mode Mode) ([]Entry, error) {
 	return entries, nil
 }
 
-func walk(content fs.FS, folder, prefix string) ([]Entry, error) {
+// SourceManifest maps a config repo's global/ or project/ folder onto the target, file for file.
+func SourceManifest(content fs.FS, mode Mode) ([]Entry, error) {
+	folder := SourceDir(mode)
+	if _, err := fs.Stat(content, folder); errors.Is(err, fs.ErrNotExist) {
+		return nil, fmt.Errorf("the source has no %s/ folder", folder)
+	}
+	entries, err := walk(content, folder, func(source string) string { return strings.TrimPrefix(source, folder+"/") })
+	// An empty folder would make every file of the previous source look dropped, and delete it.
+	if err == nil && len(entries) == 0 {
+		return nil, fmt.Errorf("the source's %s/ folder is empty", folder)
+	}
+
+	return entries, err
+}
+
+// SourceDir is the folder of a config repo that holds the files for a mode.
+func SourceDir(mode Mode) string {
+	if mode == Global {
+		return globalSourceDir
+	}
+
+	return projectSourceDir
+}
+
+func walk(content fs.FS, folder string, dest func(source string) string) ([]Entry, error) {
 	var entries []Entry
 	err := fs.WalkDir(content, folder, func(source string, entry fs.DirEntry, err error) error {
 		if err != nil || entry.IsDir() {
 			return err
 		}
-		entries = append(entries, Entry{Source: source, Dest: prefix + source})
+		entries = append(entries, Entry{Source: source, Dest: dest(source)})
 
 		return nil
 	})
@@ -84,6 +113,13 @@ func GlobalDir() (string, error) {
 	home, err := os.UserHomeDir()
 
 	return filepath.Join(home, ".claude"), err
+}
+
+// LockedSource is the config repo the last run installed from, empty for the built-in config.
+func LockedSource(target string, mode Mode) (string, error) {
+	current, _, err := lock.Read(lockPath(target, mode))
+
+	return current.Source, err
 }
 
 func lockPath(target string, mode Mode) string {
