@@ -1,6 +1,31 @@
 # ccc
 
-Reusable Claude Code config: `CLAUDE.md`, `RTK.md`, `CODING_STYLE.md`, `AGENTS.md`, rules, a PR review skill, and the MCP servers and plugins you want on every machine. One binary installs it and keeps it up to date.
+[![Release](https://img.shields.io/github/v/release/Jerome1337/ccc)](https://github.com/Jerome1337/ccc/releases/latest)
+[![Build](https://github.com/Jerome1337/ccc/actions/workflows/publish.yml/badge.svg?branch=main)](https://github.com/Jerome1337/ccc/actions/workflows/publish.yml)
+[![Go version](https://img.shields.io/github/go-mod/go-version/Jerome1337/ccc)](go.mod)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Jerome1337/ccc)](https://goreportcard.com/report/github.com/Jerome1337/ccc)
+[![License: MIT](https://img.shields.io/github/license/Jerome1337/ccc)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/Jerome1337/ccc?style=social)](https://github.com/Jerome1337/ccc/stargazers)
+
+A command-line config manager for [Claude Code](https://code.claude.com). One command installs your `CLAUDE.md`, rules, skills, MCP servers and plugins on a new machine or in a new project, and the same command keeps them up to date. When you have edited a file, ccc shows you the diff and asks before it overwrites it.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Jerome1337/ccc/main/install.sh | sh
+ccc update --global
+```
+
+## Why
+
+A Claude Code setup lives in several places: `~/.claude` for your user, `.claude/` in each repo, and `~/.claude.json` for MCP servers. Getting the same setup on a second laptop, a dev server or a teammate's machine usually means copying files by hand and retyping `claude mcp add` commands, and the copies drift apart as you change one of them.
+
+ccc ships the whole setup inside one binary. Each release carries the files and the code that installs them, so every machine that runs `ccc update` ends up with the same version.
+
+- One static Go binary for macOS and Linux, on amd64 and arm64. No Node, no npm.
+- Installs for your user (`--global`) or for the current project (`init`).
+- Adds the MCP servers and plugins listed in a YAML file, through the `claude` CLI.
+- Records a hash of every file it writes, so it can tell your edits from its own files.
+- Updates itself from GitHub releases and checks each download against `checksums.txt`.
+- Comes with a PR review skill that grades every changed file from 1 to 5, so you know which files of a large PR to read.
 
 ## Install
 
@@ -8,41 +33,44 @@ Reusable Claude Code config: `CLAUDE.md`, `RTK.md`, `CODING_STYLE.md`, `AGENTS.m
 curl -fsSL https://raw.githubusercontent.com/Jerome1337/ccc/main/install.sh | sh
 ```
 
-This puts `ccc` in `~/.local/bin` (set `CCC_INSTALL_DIR` to pick another folder). It works on macOS and Linux, on amd64 and arm64.
+The script puts `ccc` in `~/.local/bin`. Set `CCC_INSTALL_DIR` to pick another folder.
 
-## Usage
+## Commands
 
-```bash
-ccc update --global   # your user config in ~/.claude, plus MCP servers and plugins
-ccc init              # the current project
-ccc update            # the current project, later
-```
+| Command | What it does |
+|---|---|
+| `ccc update --global` | Installs or updates your user config in `~/.claude`, plus the MCP servers and plugins |
+| `ccc init` | Installs the config in the current project |
+| `ccc update` | Updates the current project to the latest release |
+| `ccc version` | Prints the installed version |
 
-`ccc update` first updates ccc itself to the latest release, then applies that version's files. Run it in a terminal, so it can ask about files you edited.
+`--force` (`-f`) overwrites the files you edited without asking, and `-g` is short for `--global`. Run `ccc update` in a terminal, so it can show you diffs and ask about your edits.
 
 ## What gets installed
 
-| File | Project (`ccc init`) | Global (`--global`) |
-|---|---|---|
-| `CLAUDE.md`, `RTK.md`, `CODING_STYLE.md` | `./` | `~/.claude/` |
-| `AGENTS.md` | `./` | — |
-| `ccc.yml` | — | `~/.claude/` |
-| `rules/*.md` | `./.claude/rules/` | — |
-| `skills/pr-review/` | `./.claude/skills/` | `~/.claude/skills/` |
+| File | Project (`ccc init`) | Global (`--global`) | What it is |
+|---|---|---|---|
+| `CLAUDE.md` | `./` | `~/.claude/` | Loaded by Claude Code in every session: security rules, and imports of the next two files |
+| `RTK.md` | `./` | `~/.claude/` | How to use RTK (Rust Token Killer), a CLI proxy that cuts the tokens command output costs |
+| `CODING_STYLE.md` | `./` | `~/.claude/` | A TypeScript coding style for any framework, with size and complexity limits based on SonarQube's rules |
+| `AGENTS.md` | `./` | | Project conventions for Cursor, Copilot and other coding agents |
+| `rules/*.md` | `./.claude/rules/` | | Rules for a Next.js 16, Turborepo, Bun, Drizzle, Biome and shadcn/ui stack |
+| `skills/pr-review/` | `./.claude/skills/` | `~/.claude/skills/` | The `/pr-review` skill |
+| `ccc.yml` | | `~/.claude/` | The MCP servers and plugins to install |
 
-The rules are written for a Next.js stack, so they're only installed in projects. In `~/.claude` they would load in every project. With `CLAUDE_CONFIG_DIR` set, `--global` uses that folder instead of `~/.claude`.
+The rules are written for one stack, so ccc only puts them in projects. With `CLAUDE_CONFIG_DIR` set, `--global` uses that folder instead of `~/.claude`.
 
 ## Your edits are kept
 
-ccc records the hash of every file it writes in `ccc-lock.json`: `~/.claude/ccc-lock.json`, or `.claude/ccc-lock.json` in a project. Commit the project one, so teammates get the same behavior.
+ccc writes the hash of every file it installs to `ccc-lock.json`, in `~/.claude/` or in the project's `.claude/`. Commit the project one, so your teammates get the same behavior.
 
-- A file you never edited is updated silently.
-- A file you edited: `ccc update` shows a diff and asks before overwriting it. If you answer no, ccc doesn't ask again until the next version of that file. Without a terminal, and with `ccc init`, it's skipped. `--force` overwrites it without asking.
-- A file ccc no longer ships is deleted if you never edited it, and kept otherwise.
+- A file you never edited is updated without a prompt.
+- For a file you edited, `ccc update` shows the diff and asks before overwriting it. If you say no, it won't ask again until that file changes in a later release. `ccc init`, and any run without a terminal, leave it alone.
+- A file that ccc no longer ships is deleted if you never edited it, and kept if you did.
 
 ## MCP servers and plugins
 
-`--global` also installs the MCP servers and plugins listed in `~/.claude/ccc.yml` for your user, with the `claude` CLI. The ones already installed are left as they are. Edit the file and run `ccc update --global` again to apply it:
+`ccc update --global` installs the servers and plugins listed in `~/.claude/ccc.yml` with the `claude` CLI, and leaves the ones you already have alone. To add one, edit the file and run the command again:
 
 ```yaml
 mcp:
@@ -50,7 +78,7 @@ mcp:
     command: npx -y @heroui/react-mcp@latest   # stdio server, arguments split on spaces
   elevenlabs:
     command: uvx elevenlabs-mcp
-    env: [ELEVENLABS_API_KEY]                  # values read from your environment
+    env: [ELEVENLABS_API_KEY]                  # read from your environment
   sentry:
     url: https://mcp.sentry.dev/mcp            # http server
 
@@ -61,43 +89,47 @@ plugins:                                       # passed to claude plugin install
   - context7@claude-plugins-official
 ```
 
-The default `ccc.yml` installs `heroui-react` and `elevenlabs` as MCP servers, and `context7`, `stripe`, `code-simplifier`, `frontend-design`, `brag`, `claude-seo`, `ponytail` and `humanizer` as plugins.
+The default file installs the `heroui-react` and `elevenlabs` MCP servers, and the `context7`, `stripe`, `code-simplifier`, `frontend-design`, `brag`, `claude-seo`, `ponytail` and `humanizer` plugins.
 
-A server whose `env` variables are missing is skipped, so `elevenlabs` is only added when `ELEVENLABS_API_KEY` is set. Export it from your shell profile or secret manager rather than typing it on the command line, so it stays out of your shell history. Like any `claude mcp add -e`, the value is then stored in `~/.claude.json`. `elevenlabs` also needs `uv`.
+ccc skips a server while one of its `env` variables is missing, so `elevenlabs` is only added once `ELEVENLABS_API_KEY` is set. Export the key from your shell profile or a secret manager to keep it out of your shell history. As with any `claude mcp add -e`, the value ends up in `~/.claude.json`. `elevenlabs` also needs `uv`.
 
-Then, in Claude Code, run `/mcp` to log in to the servers that need it (like the one in the `stripe` plugin) and `/plugin` to set the options a plugin asks for (like `ponytail`). ccc reminds you when it installed something.
+Some servers need a login and some plugins ask for options. When ccc installed something, it reminds you to run `/mcp` and `/plugin` in Claude Code.
 
-## Updating ccc itself
+## The PR review skill
 
-`ccc update` checks the latest GitHub release. When it's newer, ccc downloads the binary for your system, verifies its checksum, checks that it runs, replaces itself and continues with the new version. If anything fails, it keeps the current binary and still updates your files.
+Run `/pr-review 42` in Claude Code, or `/pr-review` on a branch that has an open PR. The skill reads the diff and grades every changed file from 1 to 5 by how sure it is that you can skip it:
+
+| Grade | On GitHub |
+|:-:|---|
+| 5 and 4 | Marked as viewed, so they collapse in the PR's file list |
+| 3 | Inline notes on the lines worth a glance |
+| 2 and 1 | A must-review checklist in the summary comment, with inline comments on the problems it found |
+
+Lockfiles, lint config, docs and assets get a 5 without being read. Secrets, CI, migrations, auth code and install scripts always go on the must-review list. Larger PRs are split across parallel reviewers, and the skill aims to finish in about three minutes. Nothing is posted until you confirm, unless you pass `--auto` for scripts and CI.
+
+## Make it yours
+
+ccc installs the files in this repo, so a fork gives you a ccc that installs your own setup:
+
+1. Fork the repo and replace `CLAUDE.md`, `CODING_STYLE.md`, `rules/`, `skills/` and `ccc.yml` with yours.
+2. Point `DefaultBaseURL` in `internal/selfupdate/selfupdate.go` and `releases_url` in `install.sh` at your fork.
+3. Enable Actions in your fork, since GitHub turns them off on forks. Then push a `feat:` commit to `main`. The release workflow tags a version and uploads the binaries with GitHub's built-in token, so there is no secret to set up.
+
+For small changes you don't need a fork: edit the installed files in your project, and ccc keeps your edits.
+
+## Self-update
+
+`ccc update` checks the latest GitHub release first. When a newer one exists, ccc downloads the binary for your system, checks it against `checksums.txt`, makes sure it runs, replaces itself and goes on with the new version. If any step fails, it keeps the current binary and still updates your files.
 
 - `CCC_NO_SELF_UPDATE=1` turns this off.
-- If the folder holding `ccc` isn't writable, ccc tells you to reinstall with the curl command instead of asking for `sudo`.
-- A binary downloaded with a browser on macOS is quarantined; run `xattr -d com.apple.quarantine ccc` once. The install script and `ccc update` don't have this problem.
+- If the folder that holds `ccc` isn't writable, ccc tells you to rerun the install script. It never asks for `sudo`.
+- macOS quarantines a binary downloaded with a browser. Run `xattr -d com.apple.quarantine ccc` once. The install script and `ccc update` aren't affected.
 
 ## Coming from the npm version
 
-The `@jerome1337/ccc` npm package is deprecated. Install the binary, then run `ccc update --global`, and `ccc update` in each project that used `npx @jerome1337/ccc init`.
+The `@jerome1337/ccc` npm package is deprecated. Install the binary, run `ccc update --global`, then run `ccc update` in each project where you used `npx @jerome1337/ccc init`.
 
-ccc recognizes the files the npm version installed. The ones you never edited are updated, or deleted when they moved: `~/.claude/rules/`, `~/.claude/AGENTS.md` and the old `skills/pr-review.md`. The ones you edited are kept.
-
-## Contents
-
-- **CLAUDE.md**: loaded automatically by Claude Code. Contains security guidelines and imports `RTK.md` and `CODING_STYLE.md`.
-- **RTK.md**: instructions for Rust Token Killer, a token-optimized CLI proxy.
-- **CODING_STYLE.md**: a coding style that works with any framework (React, Astro, Vue…): language, formatting, naming, functions, types, errors, comments, and size and complexity limits based on SonarQube's TypeScript rules.
-- **AGENTS.md**: read by AI coding agents (Claude, Cursor, Copilot…) for project conventions.
-- **rules/**: loaded by Claude Code from `.claude/rules/`. They all use `alwaysApply: true`.
-- **skills/**: each `skills/<name>/SKILL.md` adds a skill to Claude Code, like `/pr-review`.
-
-## Customization
-
-`CODING_STYLE.md` doesn't depend on the stack. The files in `rules/` are tailored for a Next.js 16 + Turborepo + Bun + Drizzle + Biome + shadcn/ui stack. To adapt them, edit them in your project: ccc keeps your edits.
-
-1. Update `rules/architecture.md` with your project structure
-2. Update `rules/commands.md` with your dev commands
-3. Update `rules/patterns.md` with your architecture patterns
-4. Adjust `rules/code-style.md` naming conventions if different
+ccc recognizes the files the npm version installed. It updates the ones you never edited, and deletes the ones that moved: `~/.claude/rules/`, `~/.claude/AGENTS.md` and the old `skills/pr-review.md`. It keeps the ones you edited.
 
 ## Development
 
@@ -106,8 +138,15 @@ go test -race ./...
 go build -ldflags "-X main.version=2.0.0" -o ccc .
 ```
 
-The config files are embedded in the binary, so a release ships the code and the content together. Conventional Commits on `main` drive releases:
-- [svu](https://github.com/caarlos0/svu) picks the next version (`fix:` → patch, `feat:` → minor, `!` or `BREAKING CHANGE:` → major) and tags it.
-- GoReleaser uploads the binaries and `checksums.txt` to the GitHub release, with notes grouped from the commits.
-- The same notes are added to the top of `CHANGELOG.md` and pushed to `main`.
-- `chore:`, `docs:`, `test:` and `ci:` commits don't release anything.
+The config files are embedded in the binary with `go:embed`. Conventional Commits on `main` drive releases:
+
+- [svu](https://github.com/caarlos0/svu) picks the next version from the commits (`fix:` is a patch, `feat:` a minor, `!` or `BREAKING CHANGE:` a major) and tags it.
+- [GoReleaser](https://goreleaser.com) uploads the binaries and `checksums.txt` to the GitHub release, with notes grouped from the commits.
+- The same notes go to the top of `CHANGELOG.md`.
+- `chore:`, `docs:`, `test:` and `ci:` commits don't trigger a release.
+
+Issues and pull requests are welcome. If ccc saves you some setup time, a star helps other Claude Code users find it.
+
+## License
+
+[MIT](LICENSE)
