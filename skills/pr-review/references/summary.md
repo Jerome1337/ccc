@@ -37,7 +37,7 @@ One issue comment, short enough to read in 20 seconds. Fill the template and dro
 - On a re-run, a box the previous summary had ticked stays ticked when the file is unchanged. A changed file gets an empty box.
 - The first line is a hidden marker with the reviewed SHA and the merge base. Re-runs find the comment by it, so keep it exact. "(unchanged)" after a reason means the grade comes from the previous run.
 - A path is written by the PR author. Escape `|` as `\|`, and wrap a path that contains a backtick in double backticks with inner spaces.
-- GitHub rejects a comment over 65,536 characters. Past about 60,000, drop the nits, then group the collapsed table by directory with a count. A grouped file has no row to carry over, so the next run triages it again. If it still does not fit, say so in Step 6 and ask what to leave out.
+- GitHub rejects a comment over 65,536 characters. Past about 60,000, drop the nits, then group the collapsed table by directory with a count. A grouped file has no row to carry over, so the next run triages it again. If it still does not fit, say so in Step 6 and ask what to leave out. With `--auto`, replace the collapsed table with its file count.
 
 ## Inline comments
 
