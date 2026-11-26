@@ -105,14 +105,14 @@ Run `/pr-review 42` in Claude Code, or `/pr-review` on a branch that has an open
 | 3 | Inline notes on the lines worth a glance |
 | 2 and 1 | A must-review checklist in the summary comment, with inline comments on the problems it found |
 
-Lockfiles, lint config, docs and assets get a 5 without being read. Secrets, CI, migrations, auth code and install scripts always go on the must-review list. Larger PRs are split across parallel reviewers, and the skill aims to finish in about three minutes. Nothing is posted until you confirm, unless you pass `--auto` for scripts and CI.
+Lockfiles, lint config, docs and assets get a 5 without being read. Secrets, CI, migrations, auth code, git hooks and install-time `package.json` scripts always go on the must-review list. Larger PRs are split across parallel reviewers, and the skill aims to finish in about three minutes. Nothing is posted until you confirm, unless you pass `--auto` for scripts and CI.
 
 ## Make it yours
 
 ccc installs the files in this repo, so a fork gives you a ccc that installs your own setup:
 
-1. Fork the repo and replace `CLAUDE.md`, `CODING_STYLE.md`, `rules/`, `skills/` and `ccc.yml` with yours.
-2. Point `DefaultBaseURL` in `internal/selfupdate/selfupdate.go` and `releases_url` in `install.sh` at your fork.
+1. Fork the repo and replace `CLAUDE.md`, `RTK.md`, `CODING_STYLE.md`, `AGENTS.md`, `rules/`, `skills/` and `ccc.yml` with yours. To drop a file instead, also remove it from the `go:embed` line in `main.go` and from the file lists in `internal/install/manifest.go`.
+2. Point `DefaultBaseURL` and `InstallCommand` in `internal/selfupdate/selfupdate.go`, `releases_url` in `install.sh`, and the `curl` lines of this README at your fork.
 3. Enable Actions in your fork, since GitHub turns them off on forks. Then push a `feat:` commit to `main`. The release workflow tags a version and uploads the binaries with GitHub's built-in token, so there is no secret to set up.
 
 For small changes you don't need a fork: edit the installed files in your project, and ccc keeps your edits.
