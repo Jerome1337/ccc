@@ -25,7 +25,7 @@ Give every changed file of a pull request a grade from 1 to 5: how confident the
 
 ## Step 1: Load the PR
 
-You need a PR number or URL. Without one, use the PR of the current branch: `gh pr view --json number`. If there is none, ask, or with `--auto`, stop. If `gh auth status` fails, tell the user to run `gh auth login`.
+You need a PR number or URL. Without one, use the PR of the current branch: `gh pr view --json number --jq .number`. If there is none, ask, or with `--auto`, stop. If `gh auth status` fails, tell the user to run `gh auth login`.
 
 Run these together. Inside a clone of the PR's repository, `gh` fills in `{owner}` and `{repo}`. Outside one, prefix every `gh` command with `GH_REPO=<owner>/<repo>`, taken from the PR URL.
 
@@ -89,7 +89,7 @@ When you are done, even when the review stops early: `git worktree remove --forc
 
 Triage uses paths and git output only, and opens no file.
 
-**Carry-over.** When the previous summary's grades can be carried over, `git merge-base --is-ancestor <previous sha> HEAD` succeeds, and the merge base equals the previous base, a file missing from `git -c core.quotePath=false diff --name-only <previous sha> HEAD` keeps its grade, reason, findings and checkbox, with "(unchanged)" after the reason. A file that was not reviewed, or that the previous summary grouped by directory, has nothing to keep: triage it. In every other case triage every file, since a force-push, a merge of the base branch or a new base can change a file's PR diff without changing the file.
+**Carry-over.** When the previous summary's grades can be carried over, `git merge-base --is-ancestor <previous sha> HEAD` succeeds, and the merge base equals the previous base, a file missing from `git -c core.quotePath=false diff --name-only <previous sha> HEAD` keeps its grade, reason, findings and checkbox, with "(unchanged)" after the reason. A file that was not reviewed, or that the previous summary grouped by directory or replaced by a count, has nothing to keep: triage it. In every other case triage every file, since a force-push, a merge of the base branch or a new base can change a file's PR diff without changing the file.
 
 **Sort the other files.** Read `references/file-lists.md`, then put each file in the first group it matches:
 
@@ -117,7 +117,7 @@ Only triage gives grade 5. A file someone reads gets at most 4.
 | Up to 60 files | Parallel subagents, Step 4b |
 | Over 60 files | Tell the user the size and ask whether to review all of it or only some directories |
 
-With `--auto`, review the 60 files with the most changed lines, Always review files first. When the user picks some directories, pick the mode again for those. The other files go on the must-review checklist as "not reviewed". They are never marked viewed and never carried over.
+When the user picks some directories, pick the mode again for those. With `--auto`, nobody picks: review the 60 files with the most changed lines, Always review files first, and pick the mode again for those 60. Secrets and built output keep their triage grade and do not count toward the 60. The other files go on the must-review checklist as "not reviewed". They are never marked viewed and never carried over.
 
 ## Step 4a: Review yourself
 
@@ -177,7 +177,7 @@ Do nothing on GitHub before the user answers. With `--auto`, skip the question: 
 
 ## Step 7: Post
 
-First check that nobody pushed since the review: `gh pr view <N> --json headRefOid` must return the reviewed SHA. If it does not, post nothing and offer to run the review again. With `--auto`, just stop: the run for the newer push reviews it. Then send the calls for the chosen option together.
+First check that nobody pushed since the review: `gh pr view <N> --json headRefOid` must return the reviewed SHA. If it does not, post nothing and offer to run the review again. With `--auto`, just stop: the run for the newer push reviews it. Then send the calls for the chosen option together, or all of them with `--auto`.
 
 **Summary.** On a first run, `gh pr comment <N> --body-file <file>`. When a previous summary exists, edit it in place so the PR keeps one: `gh api 'repos/{owner}/{repo}/issues/comments/<id>' --method PATCH -F body=@<file>`.
 
