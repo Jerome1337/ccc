@@ -44,7 +44,7 @@ One issue comment, short enough to read in 20 seconds. Fill the template and dro
 Two kinds, both on lines of the new file inside a diff hunk:
 
 - **Finding**, for a `bug`, `minor` or `question`. Start with the severity: "Bug:", "Minor:" or "Question:". Say what goes wrong and what triggers it, then the fix. Add a suggestion block when the fix is a few lines.
-- **Note**, on a grade 1 to 3 file: the lines a human should look at and what to check there. At most 2 per file, and none where a finding already covers the lines.
+- **Note**, on a grade 1 to 3 file: the lines where a mistake is most likely and the concrete risk there, what would break and when. A note that only says "check that X matches Y" names no risk: leave it out. At most 2 per file, and none where a finding already covers the lines.
 
 Each comment is one or two sentences, plus the suggestion block. No comment for nits, nor for a line outside a hunk.
 
