@@ -111,7 +111,7 @@ When the user picks some directories, pick the mode again for those. The other f
 
 ## Step 4a: Review yourself
 
-For each file: read the diff and the changed functions in full, search the worktree for callers when a signature or behavior changed, check whether a test covers the change, then grade it by `references/grading.md`. Before you keep a `bug`, try to prove it wrong: a guard upstream, a type that rules out the input, a test that covers the case. If you cannot write the trigger, it is a `question`. Record the grade, the reason, the findings and the lines to point the human at.
+For each file: read the diff and the whole new file, search the worktree for callers when a signature or behavior changed, check whether a test covers the change, then grade it by `references/grading.md`. Before you keep a `bug`, try to prove it wrong: a guard upstream, a type that rules out the input, a test that covers the case. If you cannot write the trigger, it is a `question`. Record the grade, the reason, the findings, and the notes: the lines where a mistake is most likely and the concrete risk there.
 
 ## Step 4b: Parallel subagents
 
@@ -130,17 +130,19 @@ Your files: <list, with the old path of renamed files, and "always review" next 
 Other files in this PR, for context only: <list>
 
 Read <this skill's directory>/references/grading.md and grade each of your files by it.
-Be quick: read the diff and the changed functions. Open another file only to check a caller,
-a type or a test. Do not edit, commit or post anything.
+Read the diff, then each of your files whole. Open another file only to check a caller, a type,
+a test or a reference. Do not edit, commit or post anything.
 Before you report a bug, try to prove it wrong. If you cannot write its trigger, report a question.
+When you suspect two files contradict each other, compare them now and report a finding or nothing.
 
 Return only a JSON array, one object per file:
 [{"path": "", "grade": 1, "reason": "",
   "findings": [{"startLine": 0, "line": 0, "severity": "bug|minor|question|nit",
                 "wouldBe": "bug|minor", "summary": "", "trigger": "", "fix": ""}],
   "notes": [{"startLine": 0, "line": 0, "text": ""}]}]
-reason: 12 words at most. notes: the lines a human should look at on a grade 1 to 3 file, and what
-to check there, one sentence each, 2 per file at most. startLine only for a span of several lines.
+reason: 12 words at most. notes: on a grade 1 to 3 file, the lines where a mistake is most likely
+and the concrete risk there: what would break, and when. One sentence each, 2 per file at most.
+"Check that X matches Y" names no risk: leave that note out. startLine only for a span of several lines.
 wouldBe only for a question: what it would be if confirmed.
 ```
 
