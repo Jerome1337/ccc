@@ -85,7 +85,7 @@ func TestExportGlobal(t *testing.T) {
 	}
 }
 
-// TestExportProjectRoundTrip installs an exported project config with the source manifest, file for file.
+// TestExportProjectRoundTrip installs an exported project config with the install manifest, file for file.
 func TestExportProjectRoundTrip(t *testing.T) {
 	project, repo := t.TempDir(), t.TempDir()
 	writeFiles(t, project, map[string]string{
@@ -101,7 +101,7 @@ func TestExportProjectRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer closeSource()
-	entries, err := install.SourceManifest(files, install.Project)
+	entries, err := install.Manifest(files, install.Project)
 	if err != nil {
 		t.Fatal(err)
 	}

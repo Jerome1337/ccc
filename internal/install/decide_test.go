@@ -7,7 +7,7 @@ import (
 )
 
 func TestDecide(t *testing.T) {
-	const shipped, mine, previous, legacy = "shipped", "mine", "previous", "legacy"
+	const shipped, mine, previous = "shipped", "mine", "previous"
 	update := Context{IsUpdate: true, CanPrompt: true}
 	cases := []struct {
 		name    string
@@ -18,8 +18,6 @@ func TestDecide(t *testing.T) {
 		{"missing file", State{IsShipped: true, Shipped: shipped}, update, Create},
 		{"up to date", State{IsShipped: true, Shipped: shipped, Disk: shipped}, update, Keep},
 		{"unedited by lock", State{IsShipped: true, Shipped: shipped, Disk: previous, IsLocked: true, Locked: lock.File{SHA256: previous}}, Context{}, Overwrite},
-		{"unedited by 1.x hash, no lock entry", State{IsShipped: true, Shipped: shipped, Disk: legacy, Legacy: []string{legacy}}, Context{}, Overwrite},
-		{"1.x hash ignored once the lock tracks the file", State{IsShipped: true, Shipped: shipped, Disk: legacy, IsLocked: true, Locked: lock.File{SHA256: previous}, Legacy: []string{legacy}}, update, Ask},
 		{"edited, update in a terminal", State{IsShipped: true, Shipped: shipped, Disk: mine, IsLocked: true, Locked: lock.File{SHA256: previous}}, update, Ask},
 		{"edited, update without a terminal", State{IsShipped: true, Shipped: shipped, Disk: mine}, Context{IsUpdate: true}, Skip},
 		{"edited, init in a terminal", State{IsShipped: true, Shipped: shipped, Disk: mine}, Context{CanPrompt: true}, Skip},
@@ -29,9 +27,9 @@ func TestDecide(t *testing.T) {
 		{"forced beats declined", State{IsShipped: true, Shipped: shipped, Disk: mine, IsLocked: true, Locked: lock.File{Declined: shipped}}, Context{IsForced: true}, Overwrite},
 		{"declined-only entry isn't proof of ccc's version", State{IsShipped: true, Shipped: shipped, Disk: mine, IsLocked: true, Locked: lock.File{Declined: "older"}}, Context{}, Skip},
 		{"no longer shipped, unedited", State{Disk: previous, IsLocked: true, Locked: lock.File{SHA256: previous}}, update, Remove},
-		{"no longer shipped, 1.x file", State{Disk: legacy, Legacy: []string{legacy}}, update, Remove},
 		{"no longer shipped, edited", State{Disk: mine, IsLocked: true, Locked: lock.File{SHA256: previous}}, update, Release},
-		{"no longer shipped, unknown file at a 1.x path", State{Disk: mine, Legacy: []string{legacy}}, update, Forget},
+		{"not shipped and never tracked", State{Disk: mine}, update, Forget},
+		{"no longer shipped, only ever declined", State{Disk: mine, IsLocked: true, Locked: lock.File{Declined: "older"}}, update, Forget},
 		{"no longer shipped, already gone", State{IsLocked: true, Locked: lock.File{SHA256: previous}}, update, Forget},
 		{"no longer shipped, forced still keeps edits", State{Disk: mine, IsLocked: true, Locked: lock.File{SHA256: previous}}, Context{IsForced: true}, Release},
 	}

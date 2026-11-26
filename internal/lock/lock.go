@@ -12,11 +12,10 @@ import (
 
 const (
 	FileName = "ccc-lock.json"
-	schema   = 1
-	// sourceSchema marks a lock with a source, so a ccc older than --from refuses it
-	// instead of replacing the source's files with the built-in config.
-	sourceSchema = 2
-	fileMode     = 0o644
+	// schema 2 added the source. A ccc from before it refuses the lock, so it can't
+	// replace the repo's files with the config it had built in.
+	schema   = 2
+	fileMode = 0o644
 )
 
 // File is the last version ccc wrote, and the shipped version you chose to keep yours over.
@@ -28,7 +27,7 @@ type File struct {
 type Lock struct {
 	Schema  int    `json:"schema"`
 	Version string `json:"version"`
-	// Source is the config repo the files came from, empty for the config built into ccc.
+	// Source is the config repo the files came from.
 	Source string          `json:"source,omitempty"`
 	Files  map[string]File `json:"files"`
 }
@@ -47,7 +46,7 @@ func Read(path string) (Lock, bool, error) {
 	if err := json.Unmarshal(data, &current); err != nil {
 		return Lock{}, true, fmt.Errorf("%s is not valid JSON: %w", path, err)
 	}
-	if current.Schema > sourceSchema {
+	if current.Schema > schema {
 		return Lock{}, true, fmt.Errorf("%s was written by a newer ccc, run ccc update first", path)
 	}
 	if current.Files == nil {
@@ -60,9 +59,6 @@ func Read(path string) (Lock, bool, error) {
 // Write saves the lock atomically: a crash leaves either the old file or the new one, never half of it.
 func Write(path string, current Lock) error {
 	current.Schema = schema
-	if current.Source != "" {
-		current.Schema = sourceSchema
-	}
 	data, err := json.MarshalIndent(current, "", "  ")
 	if err != nil {
 		return err

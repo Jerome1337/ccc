@@ -33,7 +33,7 @@ type Prompter interface {
 
 type Options struct {
 	Content fs.FS
-	// Source is the config repo Content was read from; empty means the built-in config and its layout.
+	// Source is the config repo Content was read from, saved in the lock for the next run.
 	Source   string
 	Target   string
 	Mode     Mode
@@ -65,11 +65,7 @@ type change struct {
 
 // Sync brings the target folder to the shipped version and saves the lock, even after a partial failure.
 func Sync(options Options) (Result, error) {
-	manifest := Manifest
-	if options.Source != "" {
-		manifest = SourceManifest
-	}
-	entries, err := manifest(options.Content, options.Mode)
+	entries, err := Manifest(options.Content, options.Mode)
 	if err != nil {
 		return Result{}, err
 	}
@@ -83,7 +79,7 @@ func Sync(options Options) (Result, error) {
 		fmt.Fprintf(options.Out, "  %s  %s → %s\n\n", term.Cyan("switch"), sourceName(current.Source), sourceName(options.Source))
 	}
 	syncer := &syncer{options: options, lock: current}
-	err = syncer.run(entries, syncer.unshippedPaths(entries, !exists))
+	err = syncer.run(entries, syncer.unshippedPaths(entries))
 	syncer.lock.Version = options.Version
 	syncer.lock.Source = options.Source
 
@@ -113,13 +109,10 @@ func (syncer *syncer) run(entries []Entry, unshipped []string) error {
 	return nil
 }
 
-// unshippedPaths is what ccc tracked before but no longer ships. Without a lock, that's the 1.x layout.
+// unshippedPaths is what ccc tracked before but no longer ships.
 // Paths that would leave the target folder are dropped, so a hand-edited lock can't delete files elsewhere.
-func (syncer *syncer) unshippedPaths(entries []Entry, isFirstRun bool) []string {
+func (syncer *syncer) unshippedPaths(entries []Entry) []string {
 	candidates := slices.Collect(maps.Keys(syncer.lock.Files))
-	if isFirstRun {
-		candidates = append(candidates, legacyDests[syncer.options.Mode]...)
-	}
 
 	isShippedOrOutside := func(dest string) bool {
 		isShipped := slices.ContainsFunc(entries, func(entry Entry) bool { return entry.Dest == dest })
@@ -149,7 +142,6 @@ func (syncer *syncer) syncShipped(entry Entry) error {
 		Disk:      diskHash,
 		Locked:    locked,
 		IsLocked:  isLocked,
-		Legacy:    legacyHashesFor(entry.Dest),
 	}
 	current := change{dest: entry.Dest, shipped: shipped, disk: disk, state: state}
 
@@ -184,7 +176,7 @@ func (syncer *syncer) syncUnshipped(dest string) error {
 	}
 
 	locked, isLocked := syncer.lock.Files[dest]
-	state := State{Disk: diskHash, Locked: locked, IsLocked: isLocked, Legacy: legacyHashesFor(dest)}
+	state := State{Disk: diskHash, Locked: locked, IsLocked: isLocked}
 	delete(syncer.lock.Files, dest)
 
 	switch Decide(state, syncer.context()) {

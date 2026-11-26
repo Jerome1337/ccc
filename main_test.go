@@ -1,45 +1,13 @@
 package main
 
 import (
-	"slices"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/Jerome1337/ccc/internal/install"
 )
-
-// TestEmbeddedManifest guards the go:embed patterns: a file left out of them would silently stop shipping.
-func TestEmbeddedManifest(t *testing.T) {
-	cases := []struct {
-		mode install.Mode
-		want []string
-	}{
-		{install.Global, []string{
-			"CLAUDE.md", "RTK.md", "CODING_STYLE.md", "ccc.yml",
-			"skills/pr-review/SKILL.md", "skills/pr-review/references/file-lists.md", "skills/pr-review/references/grading.md",
-			"skills/pr-review/references/summary.md",
-		}},
-		{install.Project, []string{
-			"CLAUDE.md", "AGENTS.md", "RTK.md", "CODING_STYLE.md",
-			".claude/rules/architecture.md", ".claude/rules/code-style.md", ".claude/rules/commands.md", ".claude/rules/patterns.md",
-			".claude/skills/pr-review/SKILL.md", ".claude/skills/pr-review/references/file-lists.md",
-			".claude/skills/pr-review/references/grading.md",
-			".claude/skills/pr-review/references/summary.md",
-		}},
-	}
-	for _, testCase := range cases {
-		entries, err := install.Manifest(content, testCase.mode)
-		if err != nil {
-			t.Fatal(err)
-		}
-		var dests []string
-		for _, entry := range entries {
-			dests = append(dests, entry.Dest)
-		}
-		if !slices.Equal(dests, testCase.want) {
-			t.Errorf("Manifest(%v) = %v\nwant %v", testCase.mode, dests, testCase.want)
-		}
-	}
-}
 
 func TestParseArgs(t *testing.T) {
 	cases := []struct {
@@ -71,5 +39,26 @@ func TestParseArgs(t *testing.T) {
 		if testCase.isValid && got != testCase.want {
 			t.Errorf("parseArgs(%v) = %+v, want %+v", testCase.args, got, testCase.want)
 		}
+	}
+}
+
+// TestOfferExport runs without a terminal, as tests do: ccc can't ask, so it explains instead of exporting.
+func TestOfferExport(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	err := offerExport(options{command: "init"}, t.TempDir(), install.Project)
+	if err == nil || !strings.Contains(err.Error(), "no config repo yet") {
+		t.Fatalf("offerExport() err = %v, want the no-repo hint", err)
+	}
+	if _, err := os.Stat(filepath.Join(home, defaultRepoFolder)); !os.IsNotExist(err) {
+		t.Error("nothing should be exported without a terminal to ask in")
+	}
+
+	if err := os.MkdirAll(filepath.Join(home, defaultRepoFolder, "project"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := offerExport(options{command: "init"}, t.TempDir(), install.Project); err != nil {
+		t.Errorf("offerExport() with an export already there = %v, want the push steps", err)
 	}
 }

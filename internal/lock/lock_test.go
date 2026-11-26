@@ -19,7 +19,7 @@ func TestReadMissingFile(t *testing.T) {
 
 func TestRoundTrip(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "nested", FileName)
-	written := Lock{Version: "2.0.0", Files: map[string]File{
+	written := Lock{Version: "2.0.0", Source: "someone/config", Files: map[string]File{
 		"CLAUDE.md": {SHA256: "abc"},
 		"ccc.yml":   {SHA256: "def", Declined: "123"},
 	}}
@@ -31,7 +31,7 @@ func TestRoundTrip(t *testing.T) {
 	if err != nil || !exists {
 		t.Fatalf("Read() exists=%v err=%v", exists, err)
 	}
-	if read.Version != "2.0.0" || read.Schema != schema || read.Files["ccc.yml"].Declined != "123" {
+	if read.Version != "2.0.0" || read.Schema != schema || read.Source != "someone/config" || read.Files["ccc.yml"].Declined != "123" {
 		t.Errorf("Read() = %+v", read)
 	}
 
@@ -42,17 +42,6 @@ func TestRoundTrip(t *testing.T) {
 	entries, _ := os.ReadDir(filepath.Dir(path))
 	if len(entries) != 1 {
 		t.Errorf("found %d files next to the lock, want no temp file left", len(entries))
-	}
-}
-
-func TestSourceRaisesSchema(t *testing.T) {
-	path := filepath.Join(t.TempDir(), FileName)
-	if err := Write(path, Lock{Source: "someone/config", Files: map[string]File{}}); err != nil {
-		t.Fatal(err)
-	}
-	read, _, err := Read(path)
-	if err != nil || read.Schema != sourceSchema || read.Source != "someone/config" {
-		t.Errorf("Read() = %+v err=%v, want the source with schema %d", read, err, sourceSchema)
 	}
 }
 
